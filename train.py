@@ -63,7 +63,7 @@ def main(_):
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
 
-            if step * num_batches_per_epoch == 0:
+            if step / num_batches_per_epoch == 0:
                 ckpt_path = os.path.join(cfg.logdir, 'model.ckpt')
                 saver.save(sess, ckpt_path, global_step=step)
 

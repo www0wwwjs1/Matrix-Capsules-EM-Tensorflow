@@ -152,7 +152,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     miu = tf.matmul(r1, votes1)
 
     miu_tile = tf.tile(miu, [1, 1, 1, caps_num_i, 1])
-    sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))
+    sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))+cfg.epsilon
     sigma_square = tf.reshape(sigma_square, [batch_size, caps_num_c, 16])
 
     beta_v = slim.variable('beta_v', shape=[caps_num_c, 16], dtype=tf.float32,
