@@ -174,7 +174,9 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
         sigma_square_tile = tf.tile(tf.reshape(sigma_square, shape=[batch_size, 1, caps_num_c, 16]),
                                     [1, caps_num_i, 1, 1])
         # algorithm from paper is replaced by products of p_{ch}, which supports better numerical stability
-        p_c = 1/(tf.sqrt(2*3.14159*(sigma_square_tile)))*tf.exp(-tf.square(votes-miu_tile)/(2*(sigma_square_tile)))
+        p_c = 1/(tf.sqrt(2*3.14159*sigma_square_tile))*tf.exp(-tf.square(votes-miu_tile)/(2*sigma_square_tile))
+        if tag:
+            test.append(p_c)
         p_c = tf.reduce_prod(p_c, axis=3)
 
         # e_exp = tf.square(votes - miu_tile) / (2 * sigma_square_tile)
@@ -210,13 +212,9 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         r_sum_tile = tf.tile(tf.reshape(r_sum, shape=[batch_size, caps_num_c, 1]), [1, 1, 16])
         cost_h = (beta_v_tile + tf.log(tf.sqrt(sigma_square))) * r_sum_tile
-        if tag:
-            test.append(cost_h)
 
         activation1 = tf.nn.sigmoid(
             (cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a_tile - tf.reduce_sum(cost_h, axis=2)))
-        if tag:
-            test.append(activation1)
 
     return miu, activation1, test
 

@@ -53,17 +53,18 @@ def main(_):
 
         for step in range(cfg.epoch*num_batches_per_epoch):
             tic = time.time()
-            _, loss_value = sess.run([train_op, loss])
-            print('%d iteration is finished in' % step + '%f second' % (time.time()-tic))
+            _, loss_value, test2_v = sess.run([train_op, loss, test2])
+            print('%d iteration is finished in ' % step + '%f second' % (time.time()-tic))
             # test1_v = sess.run(test2)
 
+            assert not np.isnan(np.any(test2_v[0])), 'p_c is nan'
             assert not np.isnan(loss_value), 'loss is nan'
 
             if step % 10 == 0:
                 summary_str = sess.run(summary_op)
                 summary_writer.add_summary(summary_str, step)
 
-            if step / num_batches_per_epoch == 0:
+            if (step % num_batches_per_epoch) == 0:
                 ckpt_path = os.path.join(cfg.logdir, 'model.ckpt')
                 saver.save(sess, ckpt_path, global_step=step)
 
