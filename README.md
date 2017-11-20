@@ -13,8 +13,9 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > **To Do List:**
 > 1. The original configuration: A=B=C=D=32, is not supported on a Tesla P40 GPU, due to the limit of memory. Some optimization on implementation structure is required.
 > 2. Coordinate Addition technique is about to be implemented.
-> 3. Complete the test part on MNIST.
-> 4. Experiments on smallNORB as in paper is about to be casted.
+> 3. Spread Loss is about to be implemented.
+> 4. Complete the test part on MNIST.
+> 5. Experiments on smallNORB as in paper is about to be casted.
 
 Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupt.edu.cn
 
