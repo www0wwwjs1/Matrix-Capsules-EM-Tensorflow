@@ -5,30 +5,30 @@ E-mail: zhangsuofei at njupt.edu.cn
 """
 
 import tensorflow as tf
-import config as cfg
+from config import cfg
 from utils import create_inputs
 import time
 import numpy as np
 import os
 import capsnet_em as net
 
-
 def main(_):
     with tf.Graph().as_default():
+        num_batches_per_epoch_train = int(60000/cfg.batch_size)
+        num_batches_test = int(10000/cfg.batch_size)
+
         batch_x, batch_labels = create_inputs(is_train=False)
         output, _ = net.build_arch(batch_x, is_train=False)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
-        num_batches_per_epoch_train = int(60000 / cfg.batch_size)
-        num_batches_test = int(10000/128)
         step = 0
 
         summaries = []
         summaries.append(tf.summary.scalar('accuracy', batch_acc))
         summary_op = tf.summary.merge(summaries)
 
-        with tf.Session as sess:
+        with tf.Session() as sess:
             tf.train.start_queue_runners(sess=sess)
             summary_writer = tf.summary.FileWriter(cfg.test_logdir, graph=sess.graph)
 
