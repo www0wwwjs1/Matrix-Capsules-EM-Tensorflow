@@ -16,7 +16,7 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > 3. Complete the test part on MNIST.
 > 4. Experiments on smallNORB as in paper is about to be casted.
 
-Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupe.edu.cn
+Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupt.edu.cn
 
 ## Requirements
 - Python >= 3.4
