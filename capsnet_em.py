@@ -130,6 +130,14 @@ def build_arch(input, is_train=False):
 
     return output, test1
 
+def test_accuracy(logits, labels):
+    logits_idx = tf.to_int32(tf.argmax(logits, axis=1))
+    logits_idx = tf.reshape(logits_idx, shape=(cfg.batch_size,))
+    correct_preds = tf.equal(tf.to_int32(labels), logits_idx)
+    accuracy = tf.reduce_sum(tf.cast(correct_preds, tf.float32))/cfg.batch_size
+
+    return accuracy
+
 def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     test = []
 

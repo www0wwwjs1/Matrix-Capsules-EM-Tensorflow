@@ -5,21 +5,12 @@ E-mail: zhangsuofei at njupt.edu.cn
 """
 
 import tensorflow as tf
-import tensorflow.contrib.slim as slim
 from config import cfg
-from utils import load_mnist
+from utils import create_inputs
 import time
 import numpy as np
 import os
 import capsnet_em as net
-
-def create_inputs():
-    tr_x, tr_y = load_mnist(cfg.dataset, cfg.is_train)
-    data_queue = tf.train.slice_input_producer([tr_x, tr_y], capacity=64*8)
-    x, y = tf.train.shuffle_batch(data_queue, num_threads=8, batch_size=cfg.batch_size, capacity=cfg.batch_size*64,
-                                  min_after_dequeue=cfg.batch_size*32, allow_smaller_final_batch=False)
-
-    return (x, y)
 
 def main(_):
     with tf.Graph().as_default():
@@ -28,7 +19,7 @@ def main(_):
         num_batches_per_epoch = int(60000/cfg.batch_size)
         opt = tf.train.AdamOptimizer()
 
-        batch_x, batch_labels = create_inputs()
+        batch_x, batch_labels = create_inputs(is_train=True)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
 
         output, test2 = net.build_arch(batch_x, is_train=True)
