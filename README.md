@@ -53,7 +53,7 @@ View the status of training:
 ```
 $ tensorboard --logdir=./logdir
 ``` 
-Open a chrome browser, visit the site: http://127.0.1.1:6006/
+Open a chrome browser, visit the site: http://127.0.0.1:6006/
 
 ### Reference
 - [naturomics/CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-Tensorflow): the implementation of Hinton's paper [Dynamic Routing Between Capsules](https://arxiv.org/abs/1710.09829)
