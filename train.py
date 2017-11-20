@@ -57,7 +57,7 @@ def main(_):
             print('%d iteration is finished in' % step + '%f second' % (time.time()-tic))
             # test1_v = sess.run(test2)
 
-            assert not np.isnan(loss_value)
+            assert not np.isnan(loss_value), 'loss is nan'
 
             if step % 10 == 0:
                 summary_str = sess.run(summary_op)
