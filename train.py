@@ -37,6 +37,11 @@ def main(_):
         sess.run(tf.global_variables_initializer())
 
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=cfg.epoch)
+
+        #read snapshot
+        # latest = os.path.join(cfg.logdir, 'model.ckpt-4212')
+        # saver.restore(sess, latest)
+
         summary_op = tf.summary.merge(summaries)
         tf.train.start_queue_runners(sess=sess)
 
@@ -44,11 +49,13 @@ def main(_):
 
         for step in range(cfg.epoch*num_batches_per_epoch):
             tic = time.time()
-            _, loss_value, test2_v = sess.run([train_op, loss, test2])
+            _, loss_value = sess.run([train_op, loss])
             print('%d iteration is finished in ' % step + '%f second' % (time.time()-tic))
             # test1_v = sess.run(test2)
 
-            assert not np.isnan(np.any(test2_v[0])), 'p_c is nan'
+            # if np.isnan(loss_value):
+            #     print('bbb')
+            # assert not np.isnan(np.any(test2_v[0])), 'a is nan'
             assert not np.isnan(loss_value), 'loss is nan'
 
             if step % 10 == 0:

@@ -6,7 +6,7 @@
 A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM Routing](https://openreview.net/pdf?id=HJWLfGWRb)
 
 > **Status:**
-> 1. The code is working on MNIST with configuration:  A=32, B=4, C=4, D=4. The definitions of A-D can be referred to the paper.
+> 1. The code is working on MNIST with configuration:  A=32, B=8, C=16, D=16 on a NVIDIA P40 GPU. The definitions of A-D can be referred to the paper.
 > 2. Some modification and optimization is implemented to prompt the numerical stability of GMM. Specific explanations can be found in the code.
 > 3. Each iteration of training takes around 0.7s on a GPU GTX 1080 and CPU i7-5820K CPU @ 3.30GHz.
 

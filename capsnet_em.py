@@ -183,8 +183,6 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
                                     [1, caps_num_i, 1, 1])
         # algorithm from paper is replaced by products of p_{ch}, which supports better numerical stability
         p_c = 1/(tf.sqrt(2*3.14159*sigma_square_tile))*tf.exp(-tf.square(votes-miu_tile)/(2*sigma_square_tile))
-        if tag:
-            test.append(p_c)
         p_c = tf.reduce_prod(p_c, axis=3)
 
         # e_exp = tf.square(votes - miu_tile) / (2 * sigma_square_tile)
@@ -214,7 +212,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         miu_tile = tf.tile(miu, [1, 1, 1, caps_num_i, 1])
 
-        sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))
+        sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))+cfg.epsilon
 
         sigma_square = tf.reshape(sigma_square, [batch_size, caps_num_c, 16])
 

@@ -38,6 +38,7 @@ def main(_):
 
                 for i in range(num_batches_test):
                     summary_str = sess.run(summary_op)
+                    print('%d batches are tested.' % step)
                     summary_writer.add_summary(summary_str, step)
 
                     step += 1
