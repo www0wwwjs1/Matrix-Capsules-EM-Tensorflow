@@ -5,6 +5,7 @@ E-mail: zhangsuofei at njupt.edu.cn
 """
 
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 from config import cfg
 from utils import create_inputs
 import time
@@ -13,7 +14,7 @@ import os
 import capsnet_em as net
 
 def main(_):
-    with tf.Graph().as_default():
+    with tf.Graph().as_default(), tf.device('/cpu:0'):
         global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False)
 
         num_batches_per_epoch = int(60000/cfg.batch_size)
@@ -21,16 +22,18 @@ def main(_):
 
         batch_x, batch_labels = create_inputs(is_train=True)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
+        with tf.device('/gpu:0'):
+            with slim.arg_scope([slim.variable], device='/cpu:0'):
+                output = net.build_arch(batch_x, is_train=True)
+                loss = net.cross_ent_loss(output, batch_labels)
 
-        output = net.build_arch(batch_x, is_train=True)
+            grad = opt.compute_gradients(loss)
 
-        loss = net.cross_ent_loss(output, batch_labels)
         loss_name = 'cross_ent_loss'
 
         summaries = []
         summaries.append(tf.summary.scalar(loss_name, loss))
 
-        grad = opt.compute_gradients(loss)
         train_op = opt.apply_gradients(grad, global_step=global_step)
 
         sess = tf.Session(config=tf.ConfigProto(allow_soft_placement=True, log_device_placement=False))
