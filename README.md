@@ -8,14 +8,13 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > **Status:**
 > 1. The code is working on MNIST with configuration:  A=32, B=8, C=16, D=16 on a NVIDIA P40 GPU. The definitions of A-D can be referred to the paper.
 > 2. Some modification and optimization is implemented to prompt the numerical stability of GMM. Specific explanations can be found in the code.
-> 3. Each iteration of training takes around 0.7s on a GPU GTX 1080 and CPU i7-5820K CPU @ 3.30GHz.
+> 3. With configuration A=32, B=4, D=4, D=4, each iteration of training takes around 0.7s on a GPU GTX 1080 and CPU i7-5820K CPU @ 3.30GHz. The final test error on MNIST is around 50%.
 
 > **To Do List:**
 > 1. The original configuration: A=B=C=D=32, is not supported on a Tesla P40 GPU, due to the limit of memory. Some optimization on implementation structure is required.
 > 2. Coordinate Addition technique is about to be implemented.
 > 3. Spread Loss is about to be implemented.
-> 4. Complete the test part on MNIST.
-> 5. Experiments on smallNORB as in paper is about to be casted.
+> 4. Experiments on smallNORB as in paper is about to be casted.
 
 Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupt.edu.cn
 
