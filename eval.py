@@ -18,7 +18,7 @@ def main(_):
         num_batches_test = int(10000/cfg.batch_size)
 
         batch_x, batch_labels = create_inputs(is_train=False)
-        output, _ = net.build_arch(batch_x, is_train=False)
+        output = net.build_arch(batch_x, is_train=False)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 

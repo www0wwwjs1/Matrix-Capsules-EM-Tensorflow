@@ -22,7 +22,7 @@ def main(_):
         batch_x, batch_labels = create_inputs(is_train=True)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
 
-        output, test2 = net.build_arch(batch_x, is_train=True)
+        output = net.build_arch(batch_x, is_train=True)
 
         loss = net.cross_ent_loss(output, batch_labels)
         loss_name = 'cross_ent_loss'
@@ -39,7 +39,7 @@ def main(_):
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=cfg.epoch)
 
         #read snapshot
-        # latest = os.path.join(cfg.logdir, 'model.ckpt-4212')
+        # latest = os.path.join(cfg.logdir, 'model.ckpt-4680')
         # saver.restore(sess, latest)
 
         summary_op = tf.summary.merge(summaries)
@@ -55,7 +55,7 @@ def main(_):
 
             # if np.isnan(loss_value):
             #     print('bbb')
-            # assert not np.isnan(np.any(test2_v[0])), 'a is nan'
+            #  assert not np.isnan(np.any(test2_v[0])), 'a is nan'
             assert not np.isnan(loss_value), 'loss is nan'
 
             if step % 10 == 0:

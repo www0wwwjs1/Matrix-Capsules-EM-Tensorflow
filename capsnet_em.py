@@ -52,6 +52,7 @@ def mat_transform(input, caps_num_c, regularizer, tag = False):
     return votes
 
 def build_arch(input, is_train=False):
+    test1 = []
     # xavier initialization is necessary here to provide higher stability
     # initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
     # instead of initializing bias with constant 0, a truncated normal initializer is exploited here for higher stability
@@ -122,13 +123,13 @@ def build_arch(input, is_train=False):
                 assert votes.get_shape() == [cfg.batch_size * 3 * 3, cfg.D, 10, 16]
 
             with tf.variable_scope('routing') as scope:
-                miu, activation, test1 = em_routing(votes, activation, 10, weights_regularizer, tag=True)
+                miu, activation, test2 = em_routing(votes, activation, 10, weights_regularizer)
 
             output = tf.reshape(activation, shape=[cfg.batch_size, 3, 3, 10])
 
         output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, 10])
 
-    return output, test1
+    return output
 
 def test_accuracy(logits, labels):
     logits_idx = tf.to_int32(tf.argmax(logits, axis=1))
@@ -183,6 +184,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
                                     [1, caps_num_i, 1, 1])
         # algorithm from paper is replaced by products of p_{ch}, which supports better numerical stability
         p_c = 1/(tf.sqrt(2*3.14159*sigma_square_tile))*tf.exp(-tf.square(votes-miu_tile)/(2*sigma_square_tile))
+        p_c = p_c/(tf.reduce_max(p_c, axis=[2, 3], keep_dims=True)/10.0)
         p_c = tf.reduce_prod(p_c, axis=3)
 
         # e_exp = tf.square(votes - miu_tile) / (2 * sigma_square_tile)
