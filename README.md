@@ -54,5 +54,18 @@ $ tensorboard --logdir=./logdir
 ``` 
 Open a chrome browser, visit the site: http://127.0.0.1:6006/
 
+** Step 5.**
+Start the test on MNIST:
+```
+$ python3 eval.py
+```
+
+** Step 6.**
+View the status of test:
+```
+$ tensorboard --logdir=./test_logdir
+```
+Open a chrome browser, visit the site: http://127.0.0.1:6006/
+
 ### Reference
 - [naturomics/CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-Tensorflow): the implementation of Hinton's paper [Dynamic Routing Between Capsules](https://arxiv.org/abs/1710.09829)

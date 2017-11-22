@@ -147,82 +147,54 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
     # m-step
     r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / 32)
-    a = tf.tile(activation, [1, 1, caps_num_c])
-    r = r * a
+    r = r * activation
 
-    r_sum = tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-    r1 = tf.reshape(r / tf.tile(r_sum, [1, caps_num_i, 1]),
+    r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)# tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
+    r1 = tf.reshape(r / r_sum,
                     shape=[batch_size, caps_num_i, caps_num_c, 1])
-    r1 = tf.tile(r1, [1, 1, 1, 16])
-    r1 = tf.reshape(tf.transpose(r1, perm=[0, 2, 3, 1]),
-                    shape=[batch_size, caps_num_c, 16, 1, caps_num_i])
-    votes1 = tf.reshape(tf.transpose(votes, perm=[0, 2, 3, 1]),
-                        shape=[batch_size, caps_num_c, 16, caps_num_i, 1])
-    miu = tf.matmul(r1, votes1)
 
-    miu_tile = tf.tile(miu, [1, 1, 1, caps_num_i, 1])
-    sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))+cfg.epsilon
-    sigma_square = tf.reshape(sigma_square, [batch_size, caps_num_c, 16])
+    miu = tf.reduce_sum(votes*r1, axis=1, keep_dims=True)
+    sigma_square = tf.reduce_sum(tf.square(votes-miu)*r1, axis=1, keep_dims=True)+cfg.epsilon
 
     beta_v = slim.variable('beta_v', shape=[caps_num_c, 16], dtype=tf.float32,
                            initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
                            regularizer=regularizer)
-    beta_v_tile = tf.tile(tf.reshape(beta_v, shape=[1, caps_num_c, 16]), [batch_size, 1, 1])
-    r_sum_tile = tf.tile(tf.reshape(r_sum, shape=[batch_size, caps_num_c, 1]), [1, 1, 16])
-    cost_h = (beta_v_tile + tf.log(tf.sqrt(sigma_square))) * r_sum_tile
+    r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
+    cost_h = (beta_v+tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, 16]))))*r_sum
 
     beta_a = slim.variable('beta_a', shape=[caps_num_c], dtype=tf.float32,
                            initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
                            regularizer=regularizer)
-    beta_a_tile = tf.tile(tf.reshape(beta_a, [1, caps_num_c]), [batch_size, 1])
-    activation1 = tf.nn.sigmoid(cfg.ac_lambda0 * (beta_a_tile - tf.reduce_sum(cost_h, axis=2)))
+    activation1 = tf.nn.sigmoid(cfg.ac_lambda0 * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 
     for iters in range(cfg.iter_routing):
         # e-step
-        miu_tile = tf.tile(tf.reshape(miu, shape=[batch_size, 1, caps_num_c, 16]), [1, caps_num_i, 1, 1])
-        sigma_square_tile = tf.tile(tf.reshape(sigma_square, shape=[batch_size, 1, caps_num_c, 16]),
-                                    [1, caps_num_i, 1, 1])
+
         # algorithm from paper is replaced by products of p_{ch}, which supports better numerical stability
-        p_c = 1/(tf.sqrt(2*3.14159*sigma_square_tile))*tf.exp(-tf.square(votes-miu_tile)/(2*sigma_square_tile))
-        p_c = p_c/(tf.reduce_max(p_c, axis=[2, 3], keep_dims=True)/10.0)
-        p_c = tf.reduce_prod(p_c, axis=3)
+        p_c_h = 1/(tf.sqrt(sigma_square))*tf.exp(-tf.square(votes-miu)/(2*sigma_square))
+        p_c_h = p_c_h/(tf.reduce_max(p_c_h, axis=[2, 3], keep_dims=True)/10.0)
+        p_c = tf.reduce_prod(p_c_h, axis=3)
+        a1 = tf.reshape(activation1, shape=[batch_size, 1, caps_num_c])
+        ap = p_c*a1
 
-        # e_exp = tf.square(votes - miu_tile) / (2 * sigma_square_tile)
-        # e_exp = -tf.reduce_sum(e_exp, axis=3)
-        #
-        # tmp = tf.reduce_prod(2 * 3.14159 * sigma_square, axis=2)
-        # p_c = 1 / tf.sqrt(tmp)
-        # p_c = tf.tile(tf.reshape(p_c, shape=[batch_size, 1, caps_num_c]), [1, caps_num_i, 1]) * e_exp
-
-        a1_tile = tf.tile(tf.reshape(activation1, shape=[batch_size, 1, caps_num_c]), [1, caps_num_i, 1])
-        ap = a1_tile * p_c
-        sum_ap_tile = tf.tile(
-            tf.reshape(tf.reduce_sum(ap, axis=2), shape=[batch_size, caps_num_i, 1]), [1, 1, caps_num_c])
-        r = ap / sum_ap_tile
+        sum_ap = tf.reduce_sum(ap, axis=2, keep_dims=True)
+        r = ap/sum_ap
 
         # m-step
-        r = r * a
+        r = r * activation
 
-        r_sum = tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-        r1 = tf.reshape(r / tf.tile(r_sum, [1, caps_num_i, 1]),
+        r_sum = tf.reduce_sum(r, axis=1,
+                              keep_dims=True)  # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
+        r1 = tf.reshape(r / r_sum,
                         shape=[batch_size, caps_num_i, caps_num_c, 1])
-        r1 = tf.tile(r1, [1, 1, 1, 16])
-        r1 = tf.reshape(tf.transpose(r1, perm=[0, 2, 3, 1]),
-                        shape=[batch_size, caps_num_c, 16, 1, caps_num_i])
 
-        miu = tf.matmul(r1, votes1)
+        miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
+        sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1, axis=1, keep_dims=True) + cfg.epsilon
 
-        miu_tile = tf.tile(miu, [1, 1, 1, caps_num_i, 1])
+        r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
+        cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, 16])))) * r_sum
 
-        sigma_square = tf.matmul(r1, tf.square(votes1 - miu_tile))+cfg.epsilon
-
-        sigma_square = tf.reshape(sigma_square, [batch_size, caps_num_c, 16])
-
-        r_sum_tile = tf.tile(tf.reshape(r_sum, shape=[batch_size, caps_num_c, 1]), [1, 1, 16])
-        cost_h = (beta_v_tile + tf.log(tf.sqrt(sigma_square))) * r_sum_tile
-
-        activation1 = tf.nn.sigmoid(
-            (cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a_tile - tf.reduce_sum(cost_h, axis=2)))
+        activation1 = tf.nn.sigmoid((cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 
     return miu, activation1, test
 
