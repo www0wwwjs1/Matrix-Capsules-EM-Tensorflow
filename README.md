@@ -9,7 +9,16 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > 1. With configuration A=32, B=8, C=16, D=16, batch_size=128, the code can work on a Tesla P40 GPU at a speed of 8s/iteration. The definitions of A-D can be referred to the paper.
 > 2. With configuration A=B=C=D=32, batch_size=64, the code can work on a Tesla P40 GPU at a speed of 25s/iteration. More optimization on implementation structure is required.
 > 3. Some modification and optimization is implemented to prompt the numerical stability of GMM. Specific explanations can be found in the code.
-> 4. With configuration A=32, B=4, D=4, D=4, batch_size=128, each iteration of training takes around 0.6s on a Tesla P40 GPU. The final test error on MNIST is around 50%.
+> 4. With configuration A=32, B=4, D=4, D=4, batch_size=128, each iteration of training takes around 0.6s on a Tesla P40 GPU.
+
+> **Current Results:**
+- Configuration: A=32, B=4, D=4, D=4, batch_size=128, iteration number of EM routing:2, no Coordinate Addition, cross entropy loss
+
+- Training loss
+![cross entropy loss](imgs/training_loss.png)
+
+- Test accuracy(current best result is 96.4%)
+![test_acc](imgs/test_accuracy.png)
 
 > **To Do List:**
 > 1. Coordinate Addition technique is about to be implemented.
@@ -41,26 +50,26 @@ $ wget -c -P data/mnist http://yann.lecun.com/exdb/mnist/{train-images-idx3-ubyt
 $ gunzip data/mnist/*.gz
 ```
 
-** Step 3.**
+**Step 3.**
 Start the training:
 ```
 $ python3 train.py
 ```
 
-** Step 4.**
+**Step 4.**
 View the status of training:
 ```
 $ tensorboard --logdir=./logdir
 ``` 
 Open a chrome browser, visit the site: http://127.0.0.1:6006/
 
-** Step 5.**
+**Step 5.**
 Start the test on MNIST:
 ```
 $ python3 eval.py
 ```
 
-** Step 6.**
+**Step 6.**
 View the status of test:
 ```
 $ tensorboard --logdir=./test_logdir

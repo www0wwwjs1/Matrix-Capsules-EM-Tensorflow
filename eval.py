@@ -36,12 +36,18 @@ def main(_):
                 ckpt = os.path.join(cfg.logdir, 'model.ckpt-%d' % (num_batches_per_epoch_train*epoch))
                 saver.restore(sess, ckpt)
 
+                accuracy_sum = 0
                 for i in range(num_batches_test):
-                    summary_str = sess.run(summary_op)
+                    batch_acc_v, summary_str = sess.run([batch_acc, summary_op])
                     print('%d batches are tested.' % step)
                     summary_writer.add_summary(summary_str, step)
 
+                    accuracy_sum += batch_acc_v
+
                     step += 1
+
+                ave_acc = accuracy_sum/num_batches_test
+                print('the average accuracy is %f' % ave_acc)
 
 if __name__ == "__main__":
     tf.app.run()
