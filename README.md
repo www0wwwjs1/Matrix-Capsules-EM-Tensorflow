@@ -11,7 +11,7 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > 3. Some modification and optimization is implemented to prompt the numerical stability of GMM. Specific explanations can be found in the code.
 > 4. With configuration A=32, B=4, D=4, D=4, batch_size=128, each iteration of training takes around 0.6s on a Tesla P40 GPU.
 
-> **Current Results:**
+> **Current Results on MNIST:**
 - Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss
 
 - Training loss
