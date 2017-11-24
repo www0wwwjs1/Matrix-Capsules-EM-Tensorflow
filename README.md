@@ -21,9 +21,8 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 ![test_acc](imgs/test_accuracy.png)
 
 > **To Do List:**
-> 1. Coordinate Addition technique is about to be implemented.
-> 2. Spread Loss is about to be implemented.
-> 3. Experiments on smallNORB as in paper is about to be casted.
+> 1. Spread Loss is about to be implemented.
+> 2. Experiments on smallNORB as in paper is about to be casted.
 
 Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupt.edu.cn
 
