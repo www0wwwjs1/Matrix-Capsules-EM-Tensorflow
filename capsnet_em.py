@@ -51,7 +51,7 @@ def mat_transform(input, caps_num_c, regularizer, tag = False):
 
     return votes
 
-def build_arch(input, is_train=False):
+def build_arch(input, coord_add, is_train=False):
     test1 = []
     # xavier initialization is necessary here to provide higher stability
     # initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
@@ -106,21 +106,17 @@ def build_arch(input, is_train=False):
 
         # It is not clear from the paper that ConvCaps2 is full connected to Class Capsules, or is conv connected with kernel size of 1*1 and a global average pooling.
         # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbael average pooling is the design.
-        # However, with this design, the introduction of scaled coordinate by Coordinate Addition technique is really puzzling.
-        # How can a kernel exploits irrelevant coordinate information? So I annotate this part out temporarily.
         with tf.variable_scope('class_caps') as scope:
-            # coords = np.zeros(shape=[3*3, 2], dtype=np.float32)
-            # for i in range(3):
-            #     for j in range(3):
-            #         coords[i*3+j, 0] = ??? require calculation of the center of receptive field here
-            #         coords[i*3+j, 1] = ???
-
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(pose, 10, weights_regularizer)
-                # coords_op = tf.constant(coords, dtype=tf.float32)
-                # coords_op = tf.reshape(coords_op, shape=[9, 1, 1, 2])
-                # coords_op = tf.tile()
+
                 assert votes.get_shape() == [cfg.batch_size * 3 * 3, cfg.D, 10, 16]
+
+                coord_add = np.reshape(coord_add, newshape=[9, 1, 1, 2])
+                coord_add = np.tile(coord_add, [cfg.batch_size, cfg.D, 10, 1])
+                coord_add_op = tf.constant(coord_add, dtype=tf.float32)
+
+                votes = tf.concat([coord_add_op, votes], axis=3)
 
             with tf.variable_scope('routing') as scope:
                 miu, activation, test2 = em_routing(votes, activation, 10, weights_regularizer)
@@ -144,23 +140,24 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
     batch_size = int(votes.get_shape()[0])
     caps_num_i = int(activation.get_shape()[1])
+    n_channels = int(votes.get_shape()[-1])
 
     # m-step
     r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / 32)
     r = r * activation
 
     r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)# tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-    r1 = tf.reshape(r / r_sum,
+    r1 = tf.reshape(r / (r_sum++cfg.epsilon),
                     shape=[batch_size, caps_num_i, caps_num_c, 1])
 
     miu = tf.reduce_sum(votes*r1, axis=1, keep_dims=True)
     sigma_square = tf.reduce_sum(tf.square(votes-miu)*r1, axis=1, keep_dims=True)+cfg.epsilon
 
-    beta_v = slim.variable('beta_v', shape=[caps_num_c, 16], dtype=tf.float32,
+    beta_v = slim.variable('beta_v', shape=[caps_num_c, n_channels], dtype=tf.float32,
                            initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
                            regularizer=regularizer)
     r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
-    cost_h = (beta_v+tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, 16]))))*r_sum
+    cost_h = (beta_v+tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, n_channels]))))*r_sum
 
     beta_a = slim.variable('beta_a', shape=[caps_num_c], dtype=tf.float32,
                            initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
@@ -178,21 +175,21 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
         ap = p_c*a1
 
         sum_ap = tf.reduce_sum(ap, axis=2, keep_dims=True)
-        r = ap/sum_ap
+        r = ap/(sum_ap+cfg.epsilon)
 
         # m-step
         r = r * activation
 
         r_sum = tf.reduce_sum(r, axis=1,
                               keep_dims=True)  # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-        r1 = tf.reshape(r / r_sum,
+        r1 = tf.reshape(r / (r_sum++cfg.epsilon),
                         shape=[batch_size, caps_num_i, caps_num_c, 1])
 
         miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
         sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1, axis=1, keep_dims=True) + cfg.epsilon
 
         r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
-        cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, 16])))) * r_sum
+        cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square, shape=[batch_size, caps_num_c, n_channels])))) * r_sum
 
         activation1 = tf.nn.sigmoid((cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 

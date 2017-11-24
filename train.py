@@ -14,6 +14,12 @@ import os
 import capsnet_em as net
 
 def main(_):
+    coord_add = [[[8., 8.], [12., 8.], [16., 8.]],
+                 [[8., 12.], [12., 12.], [16., 12.]],
+                 [[8., 16.], [12., 16.], [16., 16.]]]
+
+    coord_add = np.array(coord_add, dtype=np.float32)/28.
+
     with tf.Graph().as_default(), tf.device('/cpu:0'):
         global_step = tf.get_variable('global_step', [], initializer=tf.constant_initializer(0), trainable=False)
 
@@ -24,7 +30,7 @@ def main(_):
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
-                output = net.build_arch(batch_x, is_train=True)
+                output = net.build_arch(batch_x, coord_add, is_train=True)
                 loss = net.cross_ent_loss(output, batch_labels)
 
             grad = opt.compute_gradients(loss)
