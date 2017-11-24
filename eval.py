@@ -13,12 +13,16 @@ import os
 import capsnet_em as net
 
 def main(_):
+    coord_add = [[[8., 8.], [12., 8.], [16., 8.]],
+                 [[8., 12.], [12., 12.], [16., 12.]],
+                 [[8., 16.], [12., 16.], [16., 16.]]]
+
     with tf.Graph().as_default():
         num_batches_per_epoch_train = int(60000/cfg.batch_size)
         num_batches_test = int(10000/cfg.batch_size)
 
         batch_x, batch_labels = create_inputs(is_train=False)
-        output = net.build_arch(batch_x, is_train=False)
+        output = net.build_arch(batch_x, coord_add, is_train=False)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 

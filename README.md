@@ -12,13 +12,16 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > 4. With configuration A=32, B=4, D=4, D=4, batch_size=128, each iteration of training takes around 0.6s on a Tesla P40 GPU.
 
 > **Current Results on MNIST:**
-- Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss
+- Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, with Coordinate Addition, cross entropy loss
 
 - Training loss
 ![cross entropy loss](imgs/training_loss.png)
 
-- Test accuracy(current best result is 96.4%)
+- Test accuracy(current best result is 96.80%)
 ![test_acc](imgs/test_accuracy.png)
+
+> **Ablation Study:**
+- Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss, test accuracy is 96.4%.
 
 > **To Do List:**
 > 1. Spread Loss is about to be implemented.
