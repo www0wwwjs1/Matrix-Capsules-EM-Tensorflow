@@ -24,8 +24,7 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 - Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss, test accuracy is 96.4%.
 
 > **To Do List:**
-> 1. Spread Loss is about to be implemented.
-> 2. Experiments on smallNORB as in paper is about to be casted.
+> 1. Experiments on smallNORB as in paper is about to be casted.
 
 Any questions and comments to the code and the original algorithms are welcomed!!! My email: zhangsuofei at njupt.edu.cn
 

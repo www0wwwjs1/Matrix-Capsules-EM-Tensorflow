@@ -28,14 +28,17 @@ def main(_):
 
         batch_x, batch_labels = create_inputs(is_train=True)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
+
+        m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
                 output = net.build_arch(batch_x, coord_add, is_train=True)
-                loss = net.cross_ent_loss(output, batch_labels)
+                # loss = net.cross_ent_loss(output, batch_labels)
+                loss = net.spread_loss(output, batch_labels, m_op)
 
             grad = opt.compute_gradients(loss)
 
-        loss_name = 'cross_ent_loss'
+        loss_name = 'spread_loss'
 
         summaries = []
         summaries.append(tf.summary.scalar(loss_name, loss))
@@ -56,9 +59,10 @@ def main(_):
 
         summary_writer = tf.summary.FileWriter(cfg.logdir, graph=sess.graph)
 
+        m = 0.2
         for step in range(cfg.epoch*num_batches_per_epoch):
             tic = time.time()
-            _, loss_value = sess.run([train_op, loss])
+            _, loss_value = sess.run([train_op, loss], feed_dict={m_op: m})
             print('%d iteration is finished in ' % step + '%f second' % (time.time()-tic))
             # test1_v = sess.run(test2)
 
@@ -68,10 +72,15 @@ def main(_):
             assert not np.isnan(loss_value), 'loss is nan'
 
             if step % 10 == 0:
-                summary_str = sess.run(summary_op)
+                summary_str = sess.run(summary_op, feed_dict={m_op: m})
                 summary_writer.add_summary(summary_str, step)
 
             if (step % num_batches_per_epoch) == 0:
+                if step > 0:
+                    m += (0.9-0.2)/(cfg.epoch*0.6)
+                    if m > 0.9:
+                        m = 0.9
+
                 ckpt_path = os.path.join(cfg.logdir, 'model.ckpt')
                 saver.save(sess, ckpt_path, global_step=step)
 

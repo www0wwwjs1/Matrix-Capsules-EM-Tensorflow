@@ -16,6 +16,26 @@ def cross_ent_loss(output, y):
 
     return loss
 
+def spread_loss(output, y, m):
+    y = tf.reshape(y, [cfg.batch_size, 1])
+    indices = tf.reshape(tf.range(cfg.batch_size), [cfg.batch_size, 1])
+    concated = tf.concat(axis=1, values=[indices, y])
+    num_class = int(output.get_shape()[-1])
+    y = tf.sparse_to_dense(concated, [cfg.batch_size, num_class], 1.)
+
+    output1 = tf.reshape(output, shape=[cfg.batch_size, 1, num_class])
+    y = tf.reshape(y, shape=[cfg.batch_size, num_class, 1])
+    at = tf.matmul(output1, y)
+
+    loss = tf.square(tf.maximum(0., m-(at-output1)))
+    loss = tf.reshape(tf.matmul(loss, 1.-y), shape=[cfg.batch_size,])
+    loss = tf.reduce_sum(loss)
+
+    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    loss = tf.add_n([loss] + regularization)
+
+    return loss
+
 # input should be a tensor with size as [batch_size, height, width, channels]
 def kernel_tile(input, kernel, stride):
     input_shape = input.get_shape()
@@ -147,7 +167,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     r = r * activation
 
     r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)# tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-    r1 = tf.reshape(r / (r_sum++cfg.epsilon),
+    r1 = tf.reshape(r / (r_sum+cfg.epsilon),
                     shape=[batch_size, caps_num_i, caps_num_c, 1])
 
     miu = tf.reduce_sum(votes*r1, axis=1, keep_dims=True)
@@ -182,7 +202,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         r_sum = tf.reduce_sum(r, axis=1,
                               keep_dims=True)  # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-        r1 = tf.reshape(r / (r_sum++cfg.epsilon),
+        r1 = tf.reshape(r / (r_sum+cfg.epsilon),
                         shape=[batch_size, caps_num_i, caps_num_c, 1])
 
         miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
