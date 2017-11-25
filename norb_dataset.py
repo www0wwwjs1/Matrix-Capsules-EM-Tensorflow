@@ -96,7 +96,7 @@ def tfrecord():
     logger.info('Writing train & test to TFRecord done.')
 
 
-def read_tfrecord(filenames):
+def read_norb_tfrecord(filenames):
     """Credit: http: // ycszen.github.io / 2016 / 08 / 17 / TensorFlow高效读取数据/
        Original Version: Ycszen-物语
     """
@@ -120,15 +120,18 @@ def read_tfrecord(filenames):
     return img, label
 
 
-def test():
+def test(is_train: True):
     import re
-    TRAINING_CHUNK_RE = re.compile(r"train\d+\.tfrecord")
+    if is_train:
+        CHUNK_RE = re.compile(r"train\d+\.tfrecord")
+    else:
+        CHUNK_RE = re.compile(r"test\d+\.tfrecord")
 
     processed_dir = './data'
-    train_chunk_files = [os.path.join(processed_dir, fname)
-                         for fname in os.listdir(processed_dir)
-                         if TRAINING_CHUNK_RE.match(fname)]
-    read_tfrecord(train_chunk_files)
+    chunk_files = [os.path.join(processed_dir, fname)
+                   for fname in os.listdir(processed_dir)
+                   if CHUNK_RE.match(fname)]
+    read_norb_tfrecord(chunk_files)
     logger.debug('Test read tf record Succeed')
 
 
