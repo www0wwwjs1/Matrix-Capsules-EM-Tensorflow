@@ -1,0 +1,5 @@
+argh
+numpy
+daiquiri
+profilehooks
+matplotlib
