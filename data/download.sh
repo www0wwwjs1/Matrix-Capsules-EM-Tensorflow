@@ -5,7 +5,7 @@ while read url ; do
     wget "$url"
 done < url.txt
 
-mkdir NORB
+mkdir smallNORB
 
 echo "Done fetching archive files. Extracting..."
 
@@ -14,7 +14,7 @@ for archive in ./*.gz ; do
 done
 
 for archive in smallnorb*; do
-    mv "$archive" ./NORB/
+    mv "$archive" ./smallNORB/
 done
 
 echo "Done!"
