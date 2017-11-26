@@ -3,7 +3,6 @@ import argh
 import os
 import tensorflow as tf
 import numpy as np
-from util import plot_imgs
 
 import logging
 import daiquiri
@@ -14,6 +13,20 @@ logger = daiquiri.getLogger(__name__)
 from numpy.random import RandomState
 
 prng = RandomState(1234567890)
+
+from matplotlib import pyplot as plt
+
+
+def plot_imgs(inputs):
+    """Plot smallNORB images helper"""
+    fig = plt.figure()
+    plt.title('Show images')
+    r = np.floor(np.sqrt(len(inputs))).astype(int)
+    for i in range(r**2):
+        sample = inputs[i, :].reshape(96, 96)
+        a = fig.add_subplot(r, r, i + 1)
+        a.imshow(sample)
+    plt.show()
 
 
 def write_data_to_tfrecord(kind: str, chunkify=False):
