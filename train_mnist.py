@@ -7,7 +7,7 @@ E-mail: zhangsuofei at njupt.edu.cn
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
 from config import cfg
-from utils import create_inputs, create_inputs_norb
+from utils import create_inputs
 import time
 import numpy as np
 import os
@@ -28,7 +28,7 @@ def main(_):
         num_batches_per_epoch = int(60000 / cfg.batch_size)
         opt = tf.train.AdamOptimizer()
 
-        batch_x, batch_labels = create_inputs_norb(is_train=True)
+        batch_x, batch_labels = create_inputs(is_train=True)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
 
         m_op = tf.placeholder(dtype=tf.float32, shape=())
