@@ -53,9 +53,9 @@ $ gunzip data/mnist/*.gz
 ```
 
 **Step 3.**
-Start the training:
+Start the training(MNIST):
 ```
-$ python3 train.py
+$ python3 train_mnist.py
 ```
 
 **Step 4.**
@@ -68,7 +68,7 @@ Open a chrome browser, visit the site: http://127.0.0.1:6006/
 **Step 5.**
 Start the test on MNIST:
 ```
-$ python3 eval.py
+$ python3 eval_mnist.py
 ```
 
 **Step 6.**
