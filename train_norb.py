@@ -23,6 +23,9 @@ def main(_):
     coord_add = np.array(coord_add, dtype=np.float32) / 32.
 
     with tf.Graph().as_default(), tf.device('/cpu:0'):
+
+        summaries = []
+
         global_step = tf.get_variable(
             'global_step', [], initializer=tf.constant_initializer(0), trainable=False)
 
@@ -30,8 +33,9 @@ def main(_):
 
         """Use exponential decay leanring rate?"""
         lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, 2e2, 0.66), 1e-5)
+        summaries.append(tf.summary.scalar('learning_rate', lrn_rate))
 
-        opt = tf.train.AdamOptimizer()
+        opt = tf.train.AdamOptimizer(lrn_rate)
 
         batch_x, batch_labels = create_inputs_norb(is_train=True, epochs=cfg.epoch)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
@@ -45,10 +49,7 @@ def main(_):
 
             grad = opt.compute_gradients(loss)
 
-        loss_name = 'spread_loss'
-
-        summaries = []
-        summaries.append(tf.summary.scalar(loss_name, loss))
+        summaries.append(tf.summary.scalar('spread_loss', loss))
 
         train_op = opt.apply_gradients(grad, global_step=global_step)
 
@@ -63,7 +64,7 @@ def main(_):
         # latest = os.path.join(cfg.logdir, 'model.ckpt-4680')
         # saver.restore(sess, latest)
 
-        #coord = tf.train.Coordinator()
+        # coord = tf.train.Coordinator()
         summary_op = tf.summary.merge(summaries)
         threads = tf.train.start_queue_runners(sess=sess, coord=None)
 
@@ -74,7 +75,8 @@ def main(_):
 
             tic = time.time()
             _, loss_value = sess.run([train_op, loss], feed_dict={m_op: m})
-            print('%d iteration is finished in ' % step + '%f second' % (time.time() - tic))
+            print('%d iteration finishs in ' % step + '%f second' %
+                  (time.time() - tic) + ' loss=%f' % loss_value)
             # test1_v = sess.run(test2)
 
             # if np.isnan(loss_value):

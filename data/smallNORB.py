@@ -127,12 +127,12 @@ def read_norb_tfrecord(filenames, epochs: int):
                                            'img_raw': tf.FixedLenFeature([], tf.string),
                                        })
     img = tf.decode_raw(features['img_raw'], tf.float64)
-    logger.debug('Raw->img shape: {}'.format(img.get_shape()))
+    #logger.debug('Raw->img shape: {}'.format(img.get_shape()))
     img = tf.reshape(img, [96, 96, 1])
     img = tf.cast(img, tf.float32)  # * (1. / 255) # left unnormalized
     label = tf.cast(features['label'], tf.int32)
     # label = tf.one_hot(label, 5, dtype=tf.int32)  # left dense label
-    logger.debug('Raw->img shape: {}, label shape: {}'.format(img.get_shape(), label.get_shape()))
+    #logger.debug('Raw->img shape: {}, label shape: {}'.format(img.get_shape(), label.get_shape()))
     return img, label
 
 
