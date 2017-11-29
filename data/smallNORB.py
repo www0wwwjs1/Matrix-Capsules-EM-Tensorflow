@@ -57,7 +57,7 @@ def write_data_to_tfrecord(kind: str, chunkify=False):
     for i in range(6):
         a = fid_images.read(4)  # header
 
-    total_num_images = 243 * 2
+    total_num_images = 24300 * 2
 
     for j in range(total_num_images // CHUNK if chunkify else 1):
 
