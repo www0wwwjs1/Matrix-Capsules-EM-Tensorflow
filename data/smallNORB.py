@@ -127,9 +127,9 @@ def read_norb_tfrecord(filenames):
                                        })
     img = tf.decode_raw(features['img_raw'], tf.uint8)
     img = tf.reshape(img, [96, 96, 1])
-    img = tf.cast(img, tf.float32)  # * (1. / 255) # left normalization to init batch norm layer
+    img = tf.cast(img, tf.float32)  # * (1. / 255) # left normalization
     label = tf.cast(features['label'], tf.int32)
-    label = tf.one_hot(label, 5, dtype=tf.int32)
+    # label = tf.one_hot(label, 5, dtype=tf.int32) # left label preprocessing
     return img, label
 
 
