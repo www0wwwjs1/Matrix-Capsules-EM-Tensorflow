@@ -13,6 +13,7 @@ import numpy as np
 import os
 import capsnet_em as net
 
+
 def main(_):
     coord_add = [[[8., 8.], [12., 8.], [16., 8.], [24., 8.]],
                  [[8., 12.], [12., 12.], [16., 12.], [24., 12.]],
@@ -25,10 +26,14 @@ def main(_):
         global_step = tf.get_variable(
             'global_step', [], initializer=tf.constant_initializer(0), trainable=False)
 
-        num_batches_per_epoch = int(24300*2 / cfg.batch_size)
+        num_batches_per_epoch = int(24300 * 2 / cfg.batch_size)
+
+        """Use exponential decay leanring rate?"""
+        lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, 2e2, 0.66), 1e-5)
+
         opt = tf.train.AdamOptimizer()
 
-        batch_x, batch_labels = create_inputs_norb()
+        batch_x, batch_labels = create_inputs_norb(is_train=True, epochs=cfg.epoch)
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
 
         m_op = tf.placeholder(dtype=tf.float32, shape=())
@@ -49,6 +54,7 @@ def main(_):
 
         sess = tf.Session(config=tf.ConfigProto(
             allow_soft_placement=True, log_device_placement=False))
+        sess.run(tf.local_variables_initializer())
         sess.run(tf.global_variables_initializer())
 
         saver = tf.train.Saver(tf.global_variables(), max_to_keep=cfg.epoch)
@@ -57,13 +63,15 @@ def main(_):
         # latest = os.path.join(cfg.logdir, 'model.ckpt-4680')
         # saver.restore(sess, latest)
 
+        #coord = tf.train.Coordinator()
         summary_op = tf.summary.merge(summaries)
-        tf.train.start_queue_runners(sess=sess)
+        threads = tf.train.start_queue_runners(sess=sess, coord=None)
 
         summary_writer = tf.summary.FileWriter(cfg.logdir, graph=sess.graph)
 
         m = 0.2
         for step in range(cfg.epoch * num_batches_per_epoch):
+
             tic = time.time()
             _, loss_value = sess.run([train_op, loss], feed_dict={m_op: m})
             print('%d iteration is finished in ' % step + '%f second' % (time.time() - tic))
@@ -86,6 +94,9 @@ def main(_):
 
                 ckpt_path = os.path.join(cfg.logdir, 'model.ckpt')
                 saver.save(sess, ckpt_path, global_step=step)
+
+        # coord.join(threads)
+
 
 if __name__ == "__main__":
     tf.app.run()
