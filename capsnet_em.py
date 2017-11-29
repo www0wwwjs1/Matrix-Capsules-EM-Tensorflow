@@ -73,6 +73,7 @@ def mat_transform(input, caps_num_c, regularizer, tag = False):
 
 def build_arch(input, coord_add, is_train=False):
     test1 = []
+    data_size = int(input.get_shape()[1])
     # xavier initialization is necessary here to provide higher stability
     # initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
     # instead of initializing bias with constant 0, a truncated normal initializer is exploited here for higher stability
@@ -83,22 +84,24 @@ def build_arch(input, coord_add, is_train=False):
     with slim.arg_scope([slim.conv2d], trainable=is_train, biases_initializer=bias_initializer, weights_regularizer=weights_regularizer):#weights_initializer=initializer,
         with tf.variable_scope('relu_conv1') as scope:
             output = slim.conv2d(input, num_outputs=cfg.A, kernel_size=[5, 5], stride=2, padding='VALID', scope=scope)
+            data_size = int(np.floor((data_size-4)/2))
 
-            assert output.get_shape() == [cfg.batch_size, 12, 12, 32]
+            assert output.get_shape() == [cfg.batch_size, data_size, data_size, 32]
 
         with tf.variable_scope('primary_caps') as scope:
             pose = slim.conv2d(output, num_outputs=cfg.B*16, kernel_size=[1, 1], stride=1, padding='VALID', scope=scope, activation_fn=None)
             activation = slim.conv2d(output, num_outputs=cfg.B, kernel_size=[1, 1], stride=1, padding='VALID', activation_fn=tf.nn.sigmoid)
-            pose = tf.reshape(pose, shape=[cfg.batch_size, 12, 12, cfg.B, 16])
-            activation = tf.reshape(activation, shape=[cfg.batch_size, 12, 12, cfg.B, 1])
+            pose = tf.reshape(pose, shape=[cfg.batch_size, data_size, data_size, cfg.B, 16])
+            activation = tf.reshape(activation, shape=[cfg.batch_size, data_size, data_size, cfg.B, 1])
             output = tf.concat([pose, activation], axis=4)
-            output = tf.reshape(output, shape=[cfg.batch_size, 12, 12, -1])
-            assert output.get_shape() == [cfg.batch_size, 12, 12, cfg.B*17]
+            output = tf.reshape(output, shape=[cfg.batch_size, data_size, data_size, -1])
+            assert output.get_shape() == [cfg.batch_size, data_size, data_size, cfg.B*17]
 
         with tf.variable_scope('conv_caps1') as scope:
             output = kernel_tile(output, 3, 2)
-            output = tf.reshape(output, shape=[cfg.batch_size * 5 * 5, 3 * 3 * cfg.B, 17])
-            activation = tf.reshape(output[:, :, 16], shape=[cfg.batch_size * 5 * 5, 3 * 3 * cfg.B, 1])
+            data_size = int(np.floor((data_size-2)/2))
+            output = tf.reshape(output, shape=[cfg.batch_size * data_size * data_size, 3 * 3 * cfg.B, 17])
+            activation = tf.reshape(output[:, :, 16], shape=[cfg.batch_size * data_size * data_size, 3 * 3 * cfg.B, 1])
 
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(output[:, :, :16], cfg.C, weights_regularizer, tag=True)
@@ -106,14 +109,15 @@ def build_arch(input, coord_add, is_train=False):
             with tf.variable_scope('routing') as scope:
                 miu, activation, _ = em_routing(votes, activation, cfg.C, weights_regularizer)
 
-            pose = tf.reshape(miu, shape=[cfg.batch_size, 5, 5, cfg.C, 16])
-            activation = tf.reshape(activation, shape=[cfg.batch_size, 5, 5, cfg.C, 1])
-            output = tf.reshape(tf.concat([pose, activation], axis=4), [cfg.batch_size, 5, 5, -1])
+            pose = tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, cfg.C, 16])
+            activation = tf.reshape(activation, shape=[cfg.batch_size, data_size, data_size, cfg.C, 1])
+            output = tf.reshape(tf.concat([pose, activation], axis=4), [cfg.batch_size, data_size, data_size, -1])
 
         with tf.variable_scope('conv_caps2') as scope:
             output = kernel_tile(output, 3, 1)
-            output = tf.reshape(output, shape=[cfg.batch_size * 3 * 3, 3 * 3 * cfg.C, 17])
-            activation = tf.reshape(output[:, :, 16], shape=[cfg.batch_size * 3 * 3, 3 * 3 * cfg.C, 1])
+            data_size = int(np.floor((data_size - 2) / 1))
+            output = tf.reshape(output, shape=[cfg.batch_size * data_size * data_size, 3 * 3 * cfg.C, 17])
+            activation = tf.reshape(output[:, :, 16], shape=[cfg.batch_size * data_size * data_size, 3 * 3 * cfg.C, 1])
 
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(output[:, :, :16], cfg.D, weights_regularizer)
@@ -121,8 +125,8 @@ def build_arch(input, coord_add, is_train=False):
             with tf.variable_scope('routing') as scope:
                 miu, activation, _ = em_routing(votes, activation, cfg.D, weights_regularizer)
 
-            pose = tf.reshape(miu, shape=[cfg.batch_size*3*3, cfg.D, 16])
-            activation = tf.reshape(activation, shape=[cfg.batch_size*3*3, cfg.D, 1])
+            pose = tf.reshape(miu, shape=[cfg.batch_size*data_size*data_size, cfg.D, 16])
+            activation = tf.reshape(activation, shape=[cfg.batch_size*data_size*data_size, cfg.D, 1])
 
         # It is not clear from the paper that ConvCaps2 is full connected to Class Capsules, or is conv connected with kernel size of 1*1 and a global average pooling.
         # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbael average pooling is the design.
@@ -130,9 +134,9 @@ def build_arch(input, coord_add, is_train=False):
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(pose, 10, weights_regularizer)
 
-                assert votes.get_shape() == [cfg.batch_size * 3 * 3, cfg.D, 10, 16]
+                assert votes.get_shape() == [cfg.batch_size * data_size * data_size, cfg.D, 10, 16]
 
-                coord_add = np.reshape(coord_add, newshape=[9, 1, 1, 2])
+                coord_add = np.reshape(coord_add, newshape=[data_size * data_size, 1, 1, 2])
                 coord_add = np.tile(coord_add, [cfg.batch_size, cfg.D, 10, 1])
                 coord_add_op = tf.constant(coord_add, dtype=tf.float32)
 
@@ -141,9 +145,9 @@ def build_arch(input, coord_add, is_train=False):
             with tf.variable_scope('routing') as scope:
                 miu, activation, test2 = em_routing(votes, activation, 10, weights_regularizer)
 
-            output = tf.reshape(activation, shape=[cfg.batch_size, 3, 3, 10])
+            output = tf.reshape(activation, shape=[cfg.batch_size, data_size, data_size, 10])
 
-        output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, 3, 3, 1], strides=[1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, 10])
+        output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, 10])
 
     return output
 

@@ -8,7 +8,7 @@ flags = tf.app.flags
 flags.DEFINE_float('ac_lambda0', 1.0, '\lambda in the activation function a_c, iteration 0')
 flags.DEFINE_float('ac_lambda_step', 1.0, 'It is described that \lambda increases at each iteration with a fixed schedule, however specific super parameters is absent.')
 
-flags.DEFINE_integer('batch_size', 32, 'batch size')
+flags.DEFINE_integer('batch_size', 128, 'batch size')
 flags.DEFINE_integer('epoch', 50, 'epoch')
 flags.DEFINE_integer('iter_routing', 1, 'number of iterations')
 flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
@@ -17,9 +17,9 @@ flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
 #    structure parameters      #
 ################################
 flags.DEFINE_integer('A', 32, 'number of channels in output from ReLU Conv1')
-flags.DEFINE_integer('B', 8, 'number of capsules in output from PrimaryCaps')
-flags.DEFINE_integer('C', 16, 'number of channels in output from ConvCaps1')
-flags.DEFINE_integer('D', 16, 'number of channels in output from ConvCaps2')
+flags.DEFINE_integer('B', 4, 'number of capsules in output from PrimaryCaps')
+flags.DEFINE_integer('C', 4, 'number of channels in output from ConvCaps1')
+flags.DEFINE_integer('D', 4, 'number of channels in output from ConvCaps2')
 
 ############################
 #   environment setting    #

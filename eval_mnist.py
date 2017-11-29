@@ -6,7 +6,7 @@ E-mail: zhangsuofei at njupt.edu.cn
 
 import tensorflow as tf
 from config import cfg
-from utils import create_inputs
+from utils import create_inputs_mnist
 import time
 import numpy as np
 import os
@@ -21,7 +21,7 @@ def main(_):
         num_batches_per_epoch_train = int(60000/cfg.batch_size)
         num_batches_test = int(10000/cfg.batch_size)
 
-        batch_x, batch_labels = create_inputs(is_train=False)
+        batch_x, batch_labels = create_inputs_mnist(is_train=False)
         output = net.build_arch(batch_x, coord_add, is_train=False)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()

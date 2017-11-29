@@ -30,7 +30,7 @@ def plot_imgs(inputs):
 
 
 def write_data_to_tfrecord(kind: str, chunkify=False):
-    """Credit: https://github.com/shashanktyagi/DC-GAN-on-NORB-dataset/blob/master/src/model.py
+    """Credit: https://github.com/shashanktyagi/DC-GAN-on-smallNORB-dataset/blob/master/src/model.py
        Original Version: shashanktyagi
     """
 
@@ -51,7 +51,7 @@ def write_data_to_tfrecord(kind: str, chunkify=False):
     else:
         logger.warning('Please choose either training or testing data to preprocess.')
 
-    logger.debug(f'Read data {kind} finish.')
+    logger.debug('Read data '+kind+' finish.')
 
     """Preprocessing"""
     for i in range(6):
@@ -71,7 +71,7 @@ def write_data_to_tfrecord(kind: str, chunkify=False):
         labels = np.fromstring(fid_labels.read(num_images * np.dtype('int32').itemsize), 'int32')
         labels = np.repeat(labels, 2)
 
-        logger.debug(f'Load data {j} finish. Start filling chunk {j}.')
+        logger.debug('Load data %d finish. Start filling chunk %d.' % (j, j))
 
         # make dataset permuatation reproduceable
         perm = prng.permutation(num_images)
@@ -85,10 +85,10 @@ def write_data_to_tfrecord(kind: str, chunkify=False):
         '''
 
         """Write to tfrecord"""
-        writer = tf.python_io.TFRecordWriter(f"./{kind}{j}.tfrecords")
+        writer = tf.python_io.TFRecordWriter("./"+kind+"%d.tfrecords" % j)
         for i in range(num_images):
             if i % 100 == 0:
-                logger.debug(f'Write {kind} images {(j+1)*i}')
+                logger.debug('Write '+kind+' images %d' % ((j+1)*i))
             img = images[i, :].tobytes()
             lab = labels[i].astype(np.int64)
             example = tf.train.Example(features=tf.train.Features(feature={
@@ -99,7 +99,7 @@ def write_data_to_tfrecord(kind: str, chunkify=False):
         writer.close()
 
     # Should take less than a minute
-    logger.info(f'Done writing {kind}. Total time: {time()-start}')
+    logger.info('Done writing '+kind+'. Total time: %f' % (time()-start))
 
 
 def tfrecord():

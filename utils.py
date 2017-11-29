@@ -4,16 +4,31 @@ import numpy as np
 import tensorflow as tf
 
 from config import cfg
+import data.smallNORB as norb
 
+def create_inputs_norb():
+    img, labels = norb.read_norb_tfrecord([os.path.join('data', 'train0.tfrecord')])
 
-def create_inputs(is_train):
+    img = tf.image.resize_images(img, [48, 48])
+    img = tf.random_crop(img, [32, 32, 1])
+
+    img = tf.image.random_brightness(img, max_delta=32. / 255.)
+    img = tf.image.random_contrast(img, lower=0.5, upper=1.5)
+    img = tf.clip_by_value(img, 0.0, 1.0)
+    img = (img-0.5)*2.
+
+    x, y = tf.train.shuffle_batch([img, labels], batch_size=cfg.batch_size, capacity=cfg.batch_size * 64,
+                                  min_after_dequeue=cfg.batch_size * 32, allow_smaller_final_batch=False)
+
+    return x, y
+
+def create_inputs_mnist(is_train):
     tr_x, tr_y = load_mnist(cfg.dataset, is_train)
     data_queue = tf.train.slice_input_producer([tr_x, tr_y], capacity=64 * 8)
     x, y = tf.train.shuffle_batch(data_queue, num_threads=8, batch_size=cfg.batch_size, capacity=cfg.batch_size * 64,
                                   min_after_dequeue=cfg.batch_size * 32, allow_smaller_final_batch=False)
 
     return (x, y)
-
 
 def load_mnist(path, is_training):
     fd = open(os.path.join(cfg.dataset, 'train-images-idx3-ubyte'))
