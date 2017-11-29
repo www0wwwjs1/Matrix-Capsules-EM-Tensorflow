@@ -19,18 +19,23 @@ def cross_ent_loss(output, y):
 
 
 def spread_loss(output, y, m):
-    y = tf.reshape(y, [cfg.batch_size, 1])
-    indices = tf.reshape(tf.range(cfg.batch_size), [cfg.batch_size, 1])
-    concated = tf.concat(axis=1, values=[indices, y])
+    """
+    # check NaN
+    # See: https://stackoverflow.com/questions/40701712/how-to-check-nan-in-gradients-in-tensorflow-when-updating
+    output_check = [tf.check_numerics(output, message='NaN Found!')]
+    with tf.control_dependencies(output_check):
+    """
+
     num_class = int(output.get_shape()[-1])
-    y = tf.sparse_to_dense(concated, [cfg.batch_size, num_class], 1.)
+    y = tf.one_hot(y, num_class, dtype=tf.float32)
 
     output1 = tf.reshape(output, shape=[cfg.batch_size, 1, num_class])
-    y = tf.reshape(y, shape=[cfg.batch_size, num_class, 1])
+    y = tf.expand_dims(y, axis=2)
     at = tf.matmul(output1, y)
 
     loss = tf.square(tf.maximum(0., m - (at - output1)))
-    loss = tf.reshape(tf.matmul(loss, 1. - y), shape=[cfg.batch_size, ])
+    # TODO: Why matmul (1. -y) ?
+    #loss = tf.matmul(loss, 1. - y)
     loss = tf.reduce_sum(loss)
 
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
@@ -81,7 +86,7 @@ def mat_transform(input, caps_num_c, regularizer, tag=False):
     return votes
 
 
-def build_arch(input, coord_add, is_train=False):
+def build_arch(input, coord_add, is_train: bool, num_classes: int):
     test1 = []
     data_size = int(input.get_shape()[1])
     # xavier initialization is necessary here to provide higher stability
@@ -155,23 +160,26 @@ def build_arch(input, coord_add, is_train=False):
         # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbal average pooling is the design.
         with tf.variable_scope('class_caps') as scope:
             with tf.variable_scope('v') as scope:
-                votes = mat_transform(pose, 10, weights_regularizer)
+                votes = mat_transform(pose, num_classes, weights_regularizer)
 
-                assert votes.get_shape() == [cfg.batch_size * data_size * data_size, cfg.D, 10, 16]
+                assert votes.get_shape() == [cfg.batch_size * data_size *
+                                             data_size, cfg.D, num_classes, 16]
 
                 coord_add = np.reshape(coord_add, newshape=[data_size * data_size, 1, 1, 2])
-                coord_add = np.tile(coord_add, [cfg.batch_size, cfg.D, 10, 1])
+                coord_add = np.tile(coord_add, [cfg.batch_size, cfg.D, num_classes, 1])
                 coord_add_op = tf.constant(coord_add, dtype=tf.float32)
 
                 votes = tf.concat([coord_add_op, votes], axis=3)
 
             with tf.variable_scope('routing') as scope:
-                miu, activation, test2 = em_routing(votes, activation, 10, weights_regularizer)
+                miu, activation, test2 = em_routing(
+                    votes, activation, num_classes, weights_regularizer)
 
-            output = tf.reshape(activation, shape=[cfg.batch_size, data_size, data_size, 10])
+            output = tf.reshape(activation, shape=[
+                                cfg.batch_size, data_size, data_size, num_classes])
 
         output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, data_size, data_size, 1], strides=[
-                            1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, 10])
+                            1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, num_classes])
 
     return output
 

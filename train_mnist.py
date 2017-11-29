@@ -34,7 +34,9 @@ def main(_):
         m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
-                output = net.build_arch(batch_x, coord_add, is_train=True)
+                assert cfg.num_classes == 10, "Please change num_classes in config.py to be 10."
+                output = net.build_arch(batch_x, coord_add, is_train=True,
+                                        num_classes=cfg.num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
                 loss = net.spread_loss(output, batch_labels, m_op)
 
@@ -66,7 +68,8 @@ def main(_):
         for step in range(cfg.epoch * num_batches_per_epoch):
             tic = time.time()
             _, loss_value = sess.run([train_op, loss], feed_dict={m_op: m})
-            print('%d iteration is finished in ' % step + '%f second' % (time.time() - tic))
+            print('%d iteration finishs in ' % step + '%f second' %
+                  (time.time() - tic) + ' loss=%f' % loss_value)
             # test1_v = sess.run(test2)
 
             # if np.isnan(loss_value):

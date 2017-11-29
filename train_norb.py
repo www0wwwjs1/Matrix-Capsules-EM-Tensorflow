@@ -38,12 +38,14 @@ def main(_):
         opt = tf.train.AdamOptimizer(lrn_rate)
 
         batch_x, batch_labels = create_inputs_norb(is_train=True, epochs=cfg.epoch)
-        # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
+        # batch_y = tf.one_hot(batch_labels, depth=5, axis=1, dtype=tf.float32)
 
         m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
-                output = net.build_arch(batch_x, coord_add, is_train=True)
+                assert cfg.num_classes == 5, "Please change num_classes in config.py to be 5."
+                output = net.build_arch(batch_x, coord_add, is_train=True,
+                                        num_classes=cfg.num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
                 loss = net.spread_loss(output, batch_labels, m_op)
 
@@ -71,6 +73,8 @@ def main(_):
         summary_writer = tf.summary.FileWriter(cfg.logdir, graph=sess.graph)
 
         m = 0.2
+        m_min = m
+        m_max = 0.9
         for step in range(cfg.epoch * num_batches_per_epoch):
 
             tic = time.time()
@@ -90,9 +94,9 @@ def main(_):
 
             if (step % num_batches_per_epoch) == 0:
                 if step > 0:
-                    m += (0.9 - 0.2) / (cfg.epoch * 0.6)
-                    if m > 0.9:
-                        m = 0.9
+                    m += (m_max - m_min) / (cfg.epoch * 0.6)
+                    if m > m_max:
+                        m = m_max
 
                 ckpt_path = os.path.join(cfg.logdir, 'model.ckpt')
                 saver.save(sess, ckpt_path, global_step=step)
