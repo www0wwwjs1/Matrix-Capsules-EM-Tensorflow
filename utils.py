@@ -7,7 +7,7 @@ from config import cfg
 import data.smallNORB as norb
 
 def create_inputs_norb():
-    img, labels = norb.read_norb_tfrecord([os.path.join('data', 'train0.tfrecord')])
+    img, labels = norb.read_norb_tfrecord([os.path.join('data', 'train0.tfrecords')])
 
     img = tf.image.resize_images(img, [48, 48])
     img = tf.random_crop(img, [32, 32, 1])

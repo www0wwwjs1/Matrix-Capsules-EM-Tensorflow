@@ -1,6 +1,6 @@
 """
 License: Apache-2.0
-Author: Suofei Zhang
+Author: Suofei Zhang, Hang Yu
 E-mail: zhangsuofei at njupt.edu.cn
 """
 

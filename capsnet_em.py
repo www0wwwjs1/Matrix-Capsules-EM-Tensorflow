@@ -129,7 +129,7 @@ def build_arch(input, coord_add, is_train=False):
             activation = tf.reshape(activation, shape=[cfg.batch_size*data_size*data_size, cfg.D, 1])
 
         # It is not clear from the paper that ConvCaps2 is full connected to Class Capsules, or is conv connected with kernel size of 1*1 and a global average pooling.
-        # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbael average pooling is the design.
+        # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbal average pooling is the design.
         with tf.variable_scope('class_caps') as scope:
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(pose, 10, weights_regularizer)
