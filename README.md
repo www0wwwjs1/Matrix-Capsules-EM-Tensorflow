@@ -34,6 +34,8 @@ Any questions and comments to the code and the original algorithms are welcomed!
 - Numpy
 - Tensorflow >= 1.2.0
 
+```pip install -r requirement.txt```
+
 ## Usage
 **Step 1.**
 Clone this repository with ``git``.
@@ -52,23 +54,35 @@ $ wget -c -P data/mnist http://yann.lecun.com/exdb/mnist/{train-images-idx3-ubyt
 $ gunzip data/mnist/*.gz
 ```
 
+***To install smallNORB, follow instructions in ```./data/README.md```***
+
 **Step 3.**
 Start the training(MNIST):
 ```
-$ python3 train_mnist.py
+$ python3 train.py "mnist"
+```
+
+Start the training(smallNORB):
+```
+$ python3 train.py "smallNORB"
 ```
 
 **Step 4.**
 View the status of training:
 ```
 $ tensorboard --logdir=./logdir
-``` 
+```
 Open a chrome browser, visit the site: http://127.0.0.1:6006/
 
 **Step 5.**
 Start the test on MNIST:
 ```
-$ python3 eval_mnist.py
+$ python3 eval.py "mnist"
+```
+
+Start the test on smallNORB:
+```
+$ python3 eval.py "smallNORB"
 ```
 
 **Step 6.**

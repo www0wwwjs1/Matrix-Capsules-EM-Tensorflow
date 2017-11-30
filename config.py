@@ -28,8 +28,48 @@ flags.DEFINE_integer('D', 4, 'number of channels in output from ConvCaps2')
 flags.DEFINE_string('dataset', 'data/mnist', 'the path for dataset')
 flags.DEFINE_boolean('is_train', True, 'train or predict phase')
 flags.DEFINE_integer('num_threads', 8, 'number of threads of enqueueing exampls')
-flags.DEFINE_integer('num_classes', 5, 'number of threads of enqueueing exampls')
 flags.DEFINE_string('logdir', 'logdir', 'logs directory')
 flags.DEFINE_string('test_logdir', 'test_logdir', 'test logs directory')
 
 cfg = tf.app.flags.FLAGS
+
+
+def get_coord_add(dataset_name: str):
+    import numpy as np
+    options = {'mnist': ([[[8., 8.], [12., 8.], [16., 8.]],
+                          [[8., 12.], [12., 12.], [16., 12.]],
+                          [[8., 16.], [12., 16.], [16., 16.]]], 28.),
+               'smallNORB': ([[[8., 8.], [12., 8.], [16., 8.], [24., 8.]],
+                              [[8., 12.], [12., 12.], [16., 12.], [24., 12.]],
+                              [[8., 16.], [12., 16.], [16., 16.], [24., 16.]],
+                              [[8., 24.], [12., 24.], [16., 24.], [24., 24.]]], 32.)
+               }
+    coord_add, scale = options[dataset_name]
+
+    coord_add = np.array(coord_add, dtype=np.float32) / scale
+
+    return coord_add
+
+
+def get_dataset_size_train(dataset_name: str):
+    options = {'mnist': 60000, 'smallNORB': 23400 * 2}
+    return options[dataset_name]
+
+
+def get_dataset_size_test(dataset_name: str):
+    options = {'mnist': 10000, 'smallNORB': 23400 * 2}
+    return options[dataset_name]
+
+
+def get_num_classes(dataset_name: str):
+    options = {'mnist': 10, 'smallNORB': 5}
+    return options[dataset_name]
+
+
+from utils import create_inputs_mnist, create_inputs_norb
+
+
+def get_create_inputs(dataset_name: str, is_train: bool, epochs: int):
+    options = {'mnist': lambda: create_inputs_mnist(is_train),
+               'smallNORB': lambda: create_inputs_norb(is_train, epochs)}
+    return options[dataset_name]
