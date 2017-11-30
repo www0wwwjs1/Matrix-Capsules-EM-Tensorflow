@@ -32,10 +32,9 @@ def spread_loss(output, y, m):
     output1 = tf.reshape(output, shape=[cfg.batch_size, 1, num_class])
     y = tf.expand_dims(y, axis=2)
     at = tf.matmul(output1, y)
-
+    """Paper eq(5)."""
     loss = tf.square(tf.maximum(0., m - (at - output1)))
-    # TODO: Why matmul (1. -y) ?
-    #loss = tf.matmul(loss, 1. - y)
+    loss = tf.matmul(loss, 1. - y)
     loss = tf.reduce_sum(loss)
 
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
