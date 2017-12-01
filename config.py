@@ -18,9 +18,9 @@ flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
 #    structure parameters      #
 ################################
 flags.DEFINE_integer('A', 32, 'number of channels in output from ReLU Conv1')
-flags.DEFINE_integer('B', 4, 'number of capsules in output from PrimaryCaps')
-flags.DEFINE_integer('C', 4, 'number of channels in output from ConvCaps1')
-flags.DEFINE_integer('D', 4, 'number of channels in output from ConvCaps2')
+flags.DEFINE_integer('B', 8, 'number of capsules in output from PrimaryCaps')
+flags.DEFINE_integer('C', 16, 'number of channels in output from ConvCaps1')
+flags.DEFINE_integer('D', 16, 'number of channels in output from ConvCaps2')
 
 ############################
 #   environment setting    #

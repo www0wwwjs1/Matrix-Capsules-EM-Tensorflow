@@ -35,7 +35,7 @@ def spread_loss(output, y, m):
 
     loss = tf.square(tf.maximum(0., m - (at - output1)))
     # TODO: Why matmul (1. -y) ?
-    #loss = tf.matmul(loss, 1. - y)
+    loss = tf.matmul(loss, 1. - y)
     loss = tf.reduce_sum(loss)
 
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
