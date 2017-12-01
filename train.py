@@ -44,9 +44,10 @@ def main(args):
         summaries = []
 
         """Use exponential decay leanring rate?"""
-        lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
+        lrn_rate = tf.maximum(tf.train.exponential_decay(
+            1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
         summaries.append(tf.summary.scalar('learning_rate', lrn_rate))
-        opt = tf.train.AdamOptimizer()#lrn_rate
+        opt = tf.train.AdamOptimizer()  # lrn_rate
 
         """Get batch from data queue."""
         batch_x, batch_labels = create_inputs()

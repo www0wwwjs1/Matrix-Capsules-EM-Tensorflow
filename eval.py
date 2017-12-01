@@ -54,11 +54,14 @@ def main(args):
             summary_writer = tf.summary.FileWriter(
                 cfg.test_logdir, graph=None)  # graph=sess.graph, huge!
 
+            files = os.listdir(cfg.logdir)
             for epoch in range(cfg.epoch):
                 # requires a regex to adapt the loss value in the file name here
-                ckpt_re = re.compile()
-                ckpt = os.path.join(cfg.logdir, 'model.ckpt-%d' %
-                                    (num_batches_per_epoch_train * epoch))
+                ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
+                for __file in files:
+                    if __file.endswith(ckpt_re + ".index"):
+                        ckpt = os.path.join(cfg.logdir, __file[:-6])
+                # ckpt = os.path.join(cfg.logdir, "model.ckpt-%d" % (num_batches_per_epoch_train * epoch))
                 saver.restore(sess, ckpt)
 
                 accuracy_sum = 0
