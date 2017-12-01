@@ -200,7 +200,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     n_channels = int(votes.get_shape()[-1])
 
     # m-step
-    r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / 32)
+    r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / caps_num_c)
     r = r * activation
 
     # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
