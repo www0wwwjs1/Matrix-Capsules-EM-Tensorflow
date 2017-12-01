@@ -38,7 +38,8 @@ def create_inputs_norb(is_train: bool, epochs: int):
     if is_train:
         image = tf.random_crop(image, [32, 32, 1]) / 255.
     else:
-        image = tf.slice(image, [8, 8, 0], [32, 32, 1])/255. #image[8:40, 8:40, 1]/255.
+        image = tf.slice(image, [8, 8, 0], [32, 32, 1])
+        image = image / 255.
 
     image = (image-0.5)*2.
 
