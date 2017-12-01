@@ -14,18 +14,22 @@ import capsnet_em as net
 import logging
 import daiquiri
 
+import re
+
 daiquiri.setup(level=logging.DEBUG)
 logger = daiquiri.getLogger(__name__)
 
 
-def main(dataset_name: str):
+def main(args):
     """Get dataset hyperparameters."""
+    assert len(args) == 2 and isinstance(args[1], str)
+    dataset_name = args[1]
     coord_add = get_coord_add(dataset_name)
     dataset_size_train = get_dataset_size_train(dataset_name)
     dataset_size_test = get_dataset_size_test(dataset_name)
     num_classes = get_num_classes(dataset_name)
     create_inputs = get_create_inputs(
-        dataset_name, is_train=False, epochs=cfg.epochs)
+        dataset_name, is_train=False, epochs=cfg.epoch)
 
     """Set reproduciable random seed"""
     tf.set_random_seed(1234)
@@ -35,7 +39,7 @@ def main(dataset_name: str):
         num_batches_test = int(dataset_size_test / cfg.batch_size)
 
         batch_x, batch_labels = create_inputs()
-        output = net.build_arch(batch_x, coord_add, is_train=False)
+        output = net.build_arch(batch_x, coord_add, is_train=False, num_classes=num_classes)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
@@ -51,6 +55,8 @@ def main(dataset_name: str):
                 cfg.test_logdir, graph=None)  # graph=sess.graph, huge!
 
             for epoch in range(cfg.epoch):
+                # requires a regex to adapt the loss value in the file name here
+                ckpt_re = re.compile()
                 ckpt = os.path.join(cfg.logdir, 'model.ckpt-%d' %
                                     (num_batches_per_epoch_train * epoch))
                 saver.restore(sess, ckpt)
