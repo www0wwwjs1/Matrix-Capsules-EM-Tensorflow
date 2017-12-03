@@ -14,8 +14,6 @@ import capsnet_em as net
 import logging
 import daiquiri
 
-import re
-
 daiquiri.setup(level=logging.DEBUG)
 logger = daiquiri.getLogger(__name__)
 
@@ -50,8 +48,13 @@ def main(args):
         summaries.append(tf.summary.scalar('accuracy', batch_acc))
         summary_op = tf.summary.merge(summaries)
 
-        with tf.Session() as sess:
-            tf.train.start_queue_runners(sess=sess)
+        with tf.Session(config=tf.ConfigProto(
+            allow_soft_placement=True, log_device_placement=False)) as sess:
+            sess.run(tf.local_variables_initializer())
+            sess.run(tf.global_variables_initializer())
+
+            coord = tf.train.Coordinator()
+            threads = tf.train.start_queue_runners(sess=sess, coord=coord)
             summary_writer = tf.summary.FileWriter(
                 cfg.test_logdir, graph=sess.graph)  # graph=sess.graph, huge!
 
@@ -78,6 +81,7 @@ def main(args):
                 ave_acc = accuracy_sum / num_batches_test
                 print('the average accuracy is %f' % ave_acc)
 
+            coord.join(threads)
 
 if __name__ == "__main__":
     tf.app.run()
