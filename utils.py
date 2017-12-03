@@ -32,7 +32,7 @@ def create_inputs_norb(is_train: bool, epochs: int):
     image = tf.image.random_brightness(image, max_delta=32. / 255.)
     image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
 
-    image = tf.image.resize_images(image, [48, 48])
+    image = tf.image.resize_images(image, [48, 48]) / 255.
 
     if is_train:
         image = tf.random_crop(image, [32, 32, 1])
