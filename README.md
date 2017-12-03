@@ -73,9 +73,9 @@ $ python3 train.py "smallNORB"
 **Step 4.**
 View the status of training:
 ```
-$ tensorboard --logdir=./logdir
+$ tensorboard --logdir=./logdir/train_log/
 ```
-Open a chrome browser, visit the site: http://127.0.0.1:6006/
+Open the url tensorboard has shown.
 
 **Step 5.**
 Start the test on MNIST:
@@ -93,7 +93,7 @@ View the status of test:
 ```
 $ tensorboard --logdir=./test_logdir
 ```
-Open a chrome browser, visit the site: http://127.0.0.1:6006/
+Open the url tensorboard has shown.
 
 ### Reference
 - [naturomics/CapsNet-Tensorflow](https://github.com/naturomics/CapsNet-Tensorflow): the implementation of Hinton's paper [Dynamic Routing Between Capsules](https://arxiv.org/abs/1710.09829)

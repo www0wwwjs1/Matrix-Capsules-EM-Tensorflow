@@ -9,6 +9,7 @@ import tensorflow.contrib.slim as slim
 from config import cfg, get_coord_add, get_dataset_size_train, get_num_classes, get_create_inputs
 import time
 import numpy as np
+import sys
 import os
 import capsnet_em as net
 
@@ -40,13 +41,11 @@ def main(args):
         """Get batches per epoch."""
         num_batches_per_epoch = int(dataset_size / cfg.batch_size)
 
-        """Set tf summaries."""
-        summaries = []
-
         """Use exponential decay leanring rate?"""
-        lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
-        summaries.append(tf.summary.scalar('learning_rate', lrn_rate))
-        opt = tf.train.AdamOptimizer()#lrn_rate
+        lrn_rate = tf.maximum(tf.train.exponential_decay(
+            1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
+        tf.summary.scalar('learning_rate', lrn_rate)
+        opt = tf.train.AdamOptimizer()  # lrn_rate
 
         """Get batch from data queue."""
         batch_x, batch_labels = create_inputs()
@@ -56,19 +55,24 @@ def main(args):
         m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
-                output = net.build_arch(batch_x, coord_add, is_train=True,
+                normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=True)
+                output = net.build_arch(normalized_batch_x, coord_add, is_train=True,
                                         num_classes=num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
                 loss = net.spread_loss(output, batch_labels, m_op)
+                tf.summary.scalar('spread_loss', loss)
 
             """Compute gradient."""
             grad = opt.compute_gradients(loss)
-
-        """Add loss to summary."""
-        summaries.append(tf.summary.scalar('spread_loss', loss))
+            # See: https://stackoverflow.com/questions/40701712/how-to-check-nan-in-gradients-in-tensorflow-when-updating
+            grad_check = [tf.check_numerics(g, message='Gradient NaN Found!')
+                          for g, _ in grad] + [tf.check_numerics(loss, message='Loss NaN Found')]
 
         """Apply graident."""
-        train_op = opt.apply_gradients(grad, global_step=global_step)
+        with tf.control_dependencies(grad_check):
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                train_op = opt.apply_gradients(grad, global_step=global_step)
 
         """Set Session settings."""
         sess = tf.Session(config=tf.ConfigProto(
@@ -92,14 +96,17 @@ def main(args):
         # latest = os.path.join(cfg.logdir, 'model.ckpt-4680')
         # saver.restore(sess, latest)
         """Set summary op."""
-        summary_op = tf.summary.merge(summaries)
+        summary_op = tf.summary.merge_all()
 
         """Start coord & queue."""
         coord = tf.train.Coordinator()
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         """Set summary writer"""
-        summary_writer = tf.summary.FileWriter(cfg.logdir, graph=None)  # graph = sess.graph, huge!
+        if not os.path.exists(cfg.logdir + '/train_log/'):
+            os.makedirs(cfg.logdir + '/train_log/')
+        summary_writer = tf.summary.FileWriter(
+            cfg.logdir + '/train_log/', graph=sess.graph)  # graph = sess.graph, huge!
 
         """Main loop."""
         m_min = 0.2
@@ -108,28 +115,33 @@ def main(args):
         for step in range(cfg.epoch * num_batches_per_epoch):
             tic = time.time()
             """"TF queue would pop batch until no file"""
-            _, loss_value = sess.run([train_op, loss], feed_dict={m_op: m})
-            logger.info('%d iteration finishs in ' % step + '%f second' %
-                        (time.time() - tic) + ' loss=%f' % loss_value)
+            try:
+                _, loss_value, summary_str = sess.run(
+                    [train_op, loss, summary_op], feed_dict={m_op: m})
+                logger.info('%d iteration finishs in ' % step + '%f second' %
+                            (time.time() - tic) + ' loss=%f' % loss_value)
+            except KeyboardInterrupt:
+                sess.close()
+                sys.exit()
+            except tf.errors.InvalidArgumentError:
+                logger.warning('%d iteration contains NaN gradients. Discard.' % step)
+                continue
+            else:
+                """Write to summary."""
+                if step % 5 == 0:
+                    summary_writer.add_summary(summary_str, step)
 
-            """Check NaN"""
-            assert not np.isnan(loss_value), 'loss is nan'
+                """Epoch wise linear annealling."""
+                if (step % num_batches_per_epoch) == 0:
+                    if step > 0:
+                        m += (m_max - m_min) / (cfg.epoch * 0.6)
+                        if m > m_max:
+                            m = m_max
 
-            """Write to summary."""
-            if step % 10 == 0:
-                summary_str = sess.run(summary_op, feed_dict={m_op: m})
-                summary_writer.add_summary(summary_str, step)
-
-            """Epoch wise linear annealling."""
-            if (step % num_batches_per_epoch) == 0:
-                if step > 0:
-                    m += (m_max - m_min) / (cfg.epoch * 0.6)
-                    if m > m_max:
-                        m = m_max
-
-                """Save model periodically"""
-                ckpt_path = os.path.join(cfg.logdir, 'model-{}.ckpt'.format(round(loss_value, 4)))
-                saver.save(sess, ckpt_path, global_step=step)
+                    """Save model periodically"""
+                    ckpt_path = os.path.join(
+                        cfg.logdir, 'model-{}.ckpt'.format(round(loss_value, 4)))
+                    saver.save(sess, ckpt_path, global_step=step)
 
         """Join threads"""
         coord.join(threads)
