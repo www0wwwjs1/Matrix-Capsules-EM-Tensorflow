@@ -42,7 +42,8 @@ def main(args):
         num_batches_per_epoch = int(dataset_size / cfg.batch_size)
 
         """Use exponential decay leanring rate?"""
-        lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
+        lrn_rate = tf.maximum(tf.train.exponential_decay(
+            1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
         tf.summary.scalar('learning_rate', lrn_rate)
         opt = tf.train.AdamOptimizer()  # lrn_rate
 
@@ -64,8 +65,9 @@ def main(args):
             """Compute gradient."""
             grad = opt.compute_gradients(loss)
             # See: https://stackoverflow.com/questions/40701712/how-to-check-nan-in-gradients-in-tensorflow-when-updating
-            grad_check = [tf.check_numerics(g,message='Gradient NaN Found!') for g,_ in grad]+[tf.check_numerics(loss,message='Loss NaN Found')]
-            
+            grad_check = [tf.check_numerics(g, message='Gradient NaN Found!')
+                          for g, _ in grad] + [tf.check_numerics(loss, message='Loss NaN Found')]
+
         """Apply graident."""
         with tf.control_dependencies(grad_check):
             update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
@@ -101,9 +103,10 @@ def main(args):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         """Set summary writer"""
-        if not os.path.exists(cfg.logdir+'/train_log/'):
-            os.makedirs(cfg.logdir+'/train_log/')
-        summary_writer = tf.summary.FileWriter(cfg.logdir+'/train_log/', graph=sess.graph)  # graph = sess.graph, huge!
+        if not os.path.exists(cfg.logdir + '/train_log/'):
+            os.makedirs(cfg.logdir + '/train_log/')
+        summary_writer = tf.summary.FileWriter(
+            cfg.logdir + '/train_log/', graph=sess.graph)  # graph = sess.graph, huge!
 
         """Main loop."""
         m_min = 0.2
@@ -113,15 +116,16 @@ def main(args):
             tic = time.time()
             """"TF queue would pop batch until no file"""
             try:
-                _, loss_value, summary_str = sess.run([train_op, loss, summary_op], feed_dict={m_op: m})
+                _, loss_value, summary_str = sess.run(
+                    [train_op, loss, summary_op], feed_dict={m_op: m})
                 logger.info('%d iteration finishs in ' % step + '%f second' %
-                        (time.time() - tic) + ' loss=%f' % loss_value)
+                            (time.time() - tic) + ' loss=%f' % loss_value)
             except KeyboardInterrupt:
-                    sess.close()
-                    sys.exit()
+                sess.close()
+                sys.exit()
             except tf.errors.InvalidArgumentError:
-                    logger.warning('%d iteration contains NaN gradients. Discard.' % step)
-                    continue
+                logger.warning('%d iteration contains NaN gradients. Discard.' % step)
+                continue
             else:
                 """Write to summary."""
                 if step % 5 == 0:
@@ -135,7 +139,8 @@ def main(args):
                             m = m_max
 
                     """Save model periodically"""
-                    ckpt_path = os.path.join(cfg.logdir, 'model-{}.ckpt'.format(round(loss_value, 4)))
+                    ckpt_path = os.path.join(
+                        cfg.logdir, 'model-{}.ckpt'.format(round(loss_value, 4)))
                     saver.save(sess, ckpt_path, global_step=step)
 
         """Join threads"""

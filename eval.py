@@ -38,7 +38,8 @@ def main(args):
 
         batch_x, batch_labels = create_inputs()
         normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=False)
-        output = net.build_arch(normalized_batch_x, coord_add, is_train=False, num_classes=num_classes)
+        output = net.build_arch(normalized_batch_x, coord_add,
+                                is_train=False, num_classes=num_classes)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
@@ -49,7 +50,7 @@ def main(args):
         summary_op = tf.summary.merge(summaries)
 
         with tf.Session(config=tf.ConfigProto(
-            allow_soft_placement=True, log_device_placement=False)) as sess:
+                allow_soft_placement=True, log_device_placement=False)) as sess:
             sess.run(tf.local_variables_initializer())
             sess.run(tf.global_variables_initializer())
 
@@ -82,6 +83,7 @@ def main(args):
                 print('the average accuracy is %f' % ave_acc)
 
             coord.join(threads)
+
 
 if __name__ == "__main__":
     tf.app.run()
