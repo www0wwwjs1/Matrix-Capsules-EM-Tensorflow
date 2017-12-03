@@ -37,7 +37,9 @@ def main(args):
         num_batches_test = int(dataset_size_test / cfg.batch_size)
 
         batch_x, batch_labels = create_inputs()
-        output = net.build_arch(batch_x, coord_add, is_train=False, num_classes=num_classes)
+        normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=False)
+        output = net.build_arch(normalized_batch_x, coord_add,
+                                is_train=False, num_classes=num_classes)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
@@ -48,14 +50,14 @@ def main(args):
         summary_op = tf.summary.merge(summaries)
 
         with tf.Session(config=tf.ConfigProto(
-            allow_soft_placement=True, log_device_placement=False)) as sess:
+                allow_soft_placement=True, log_device_placement=False)) as sess:
             sess.run(tf.local_variables_initializer())
             sess.run(tf.global_variables_initializer())
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
             summary_writer = tf.summary.FileWriter(
-                cfg.test_logdir, graph=None)  # graph=sess.graph, huge!
+                cfg.test_logdir, graph=sess.graph)  # graph=sess.graph, huge!
 
             files = os.listdir(cfg.logdir)
             for epoch in range(cfg.epoch):
@@ -81,6 +83,7 @@ def main(args):
                 print('the average accuracy is %f' % ave_acc)
 
             coord.join(threads)
+
 
 if __name__ == "__main__":
     tf.app.run()
