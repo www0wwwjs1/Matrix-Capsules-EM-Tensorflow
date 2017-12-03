@@ -53,7 +53,7 @@ def main(args):
         with tf.Session() as sess:
             tf.train.start_queue_runners(sess=sess)
             summary_writer = tf.summary.FileWriter(
-                cfg.test_logdir, graph=None)  # graph=sess.graph, huge!
+                cfg.test_logdir, graph=sess.graph)  # graph=sess.graph, huge!
 
             files = os.listdir(cfg.logdir)
             for epoch in range(cfg.epoch):
