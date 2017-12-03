@@ -46,8 +46,9 @@ def spread_loss(output, y, m):
 
 
 def kernel_tile(input, kernel, stride):
-    input_shape = input.get_shape()
+    # output = tf.extract_image_patches(input, ksizes=[1, kernel, kernel, 1], strides=[1, stride, stride, 1], rates=[1, 1, 1, 1], padding='VALID')
 
+    input_shape = input.get_shape()
     tile_filter = np.zeros(shape=[kernel, kernel, input_shape[3],
                                   kernel * kernel], dtype=np.float32)
     for i in range(kernel):

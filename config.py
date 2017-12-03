@@ -5,8 +5,8 @@ flags = tf.app.flags
 ############################
 #    hyper parameters      #
 ############################
-flags.DEFINE_float('ac_lambda0', 1.0, '\lambda in the activation function a_c, iteration 0')
-flags.DEFINE_float('ac_lambda_step', 1.0,
+flags.DEFINE_float('ac_lambda0', 0.01, '\lambda in the activation function a_c, iteration 0')
+flags.DEFINE_float('ac_lambda_step', 0.01,
                    'It is described that \lambda increases at each iteration with a fixed schedule, however specific super parameters is absent.')
 
 flags.DEFINE_integer('batch_size', 32, 'batch size')

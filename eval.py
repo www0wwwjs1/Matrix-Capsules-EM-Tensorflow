@@ -34,7 +34,7 @@ def main(args):
 
     with tf.Graph().as_default():
         num_batches_per_epoch_train = int(dataset_size_train / cfg.batch_size)
-        num_batches_test = int(dataset_size_test / cfg.batch_size)
+        num_batches_test = int(dataset_size_test / cfg.batch_size * 0.1)
 
         batch_x, batch_labels = create_inputs()
         output = net.build_arch(batch_x, coord_add, is_train=False, num_classes=num_classes)
