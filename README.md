@@ -11,6 +11,9 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 > 3. Some modification and optimization is implemented to prompt the numerical stability of GMM. Specific explanations can be found in the code.
 > 4. With configuration A=32, B=4, D=4, D=4, batch_size=128, each iteration of training takes around 0.6s on a Tesla P40 GPU.
 
+> **Current Results on smallNORB:**
+- Configuration: A=32, B=8, C=16, D=16, batch_size=32, iteration number of EM routing: 2, with Coordinate Addition, loss
+
 > **Current Results on MNIST:**
 - Configuration: A=32, B=8, C=16, D=16, batch_size=32, iteration number of EM routing: 2, with Coordinate Addition, loss
 
@@ -20,9 +23,9 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 - Test accuracy(current best result is 99.1%)
 ![test_acc](imgs/test_accuracy.png)
 
-> **Ablation Study:**
+> **Ablation Study on MNIST:**
 - Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss, test accuracy is 96.4%.
-- Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, with Coordinate Addition, cross entropy loss
+- Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, with Coordinate Addition, cross entropy loss, test accuracy is 96.8%.
 
 > **To Do List:**
 > 1. Experiments on smallNORB as in paper is about to be casted.
