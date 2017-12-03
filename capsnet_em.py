@@ -100,8 +100,9 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
 
     # weights_initializer=initializer,
     with slim.arg_scope([slim.conv2d], trainable=is_train, biases_initializer=bias_initializer, weights_regularizer=weights_regularizer):
+        output = slim.batch_norm(input, center=False, is_training=is_train, trainable=is_train)
         with tf.variable_scope('relu_conv1') as scope:
-            output = slim.conv2d(input, num_outputs=cfg.A, kernel_size=[
+            output = slim.conv2d(output, num_outputs=cfg.A, kernel_size=[
                                  5, 5], stride=2, padding='VALID', scope=scope)
             data_size = int(np.floor((data_size - 4) / 2))
 
