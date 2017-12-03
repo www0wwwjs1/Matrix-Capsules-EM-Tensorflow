@@ -44,8 +44,7 @@ def main(args):
         summaries = []
 
         """Use exponential decay leanring rate?"""
-        lrn_rate = tf.maximum(tf.train.exponential_decay(
-            1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
+        lrn_rate = tf.maximum(tf.train.exponential_decay(1e-3, global_step, num_batches_per_epoch, 0.8), 1e-5)
         summaries.append(tf.summary.scalar('learning_rate', lrn_rate))
         opt = tf.train.AdamOptimizer()  # lrn_rate
 
@@ -120,7 +119,7 @@ def main(args):
             assert not np.isnan(loss_value), 'loss is nan'
 
             """Write to summary."""
-            if step % 10 == 0:
+            if step % 5 == 0:
                 summary_str = sess.run(summary_op, feed_dict={m_op: m})
                 summary_writer.add_summary(summary_str, step)
 
