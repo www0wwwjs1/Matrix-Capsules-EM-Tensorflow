@@ -34,13 +34,10 @@ def create_inputs_norb(is_train: bool, epochs: int):
 
     image = tf.image.resize_images(image, [48, 48])
 
-    # naive minimax to [0,1]
     if is_train:
-        image = tf.random_crop(image, [32, 32, 1]) / 255.
+        image = tf.random_crop(image, [32, 32, 1])
     else:
-        image = tf.slice(image, [8, 8, 0], [32, 32, 1])/255. #image[8:40, 8:40, 1]/255.
-
-    image = (image-0.5)*2.
+        image = tf.slice(image, [8, 8, 0], [32, 32, 1])
 
     x, y = tf.train.shuffle_batch([image, label], num_threads=cfg.num_threads, batch_size=cfg.batch_size, capacity=cfg.batch_size * 64,
                                   min_after_dequeue=cfg.batch_size * 32, allow_smaller_final_batch=False)

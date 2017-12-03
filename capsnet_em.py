@@ -12,6 +12,7 @@ import numpy as np
 
 def cross_ent_loss(output, y):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=output)
+    loss = tf.reduce_mean(loss)
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
     loss = tf.add_n([loss] + regularization)
 
@@ -35,7 +36,7 @@ def spread_loss(output, y, m):
     """Paper eq(5)."""
     loss = tf.square(tf.maximum(0., m - (at - output1)))
     loss = tf.matmul(loss, 1. - y)
-    loss = tf.reduce_sum(loss)
+    loss = tf.reduce_mean(loss)
 
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
     loss = tf.add_n([loss] + regularization)
