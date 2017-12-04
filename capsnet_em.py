@@ -230,9 +230,16 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
         # e-step
 
         # algorithm from paper is replaced by products of p_{ch}, which supports better numerical stability
-        p_c_h = 1 / (tf.sqrt(sigma_square)) * tf.exp(-tf.square(votes - miu) / (2 * sigma_square))
-        p_c_h = p_c_h / (tf.reduce_max(p_c_h, axis=[2, 3], keep_dims=True) / 10.0)
-        p_c = tf.reduce_prod(p_c_h, axis=3)
+        # p_c_h = 1 / (tf.sqrt(sigma_square)) * tf.exp(-tf.square(votes - miu) / (2 * sigma_square))
+        # p_c_h = p_c_h / (tf.reduce_max(p_c_h, axis=[2, 3], keep_dims=True) / 10.0)
+        # p_c = tf.reduce_prod(p_c_h, axis=3)
+
+        # Contributor: Yunzhi Shi
+        # log and exp here provide higher numerical stability especially for bigger number of iterations
+        log_p_c_h = -tf.log(tf.sqrt(sigma_square)) + (tf.square(votes - miu) / (2 * sigma_square))
+        log_p_c_h = log_p_c_h - (tf.reduce_max(log_p_c_h, axis=[2, 3], keep_dims=True) - tf.log(10.0))
+        p_c = tf.exp(tf.reduce_sum(log_p_c_h, axis=3))
+
         a1 = tf.reshape(activation1, shape=[batch_size, 1, caps_num_c])
         ap = p_c * a1
 
