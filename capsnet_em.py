@@ -1,7 +1,7 @@
 """
 License: Apache-2.0
-Author: Suofei Zhang
-E-mail: zhangsuofei at njupt.edu.cn
+Author: Suofei Zhang | Hang Yu
+E-mail: zhangsuofei at njupt.edu.cn | hangyu5 at illinois.edu
 """
 
 import tensorflow as tf
@@ -236,7 +236,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         # Contributor: Yunzhi Shi
         # log and exp here provide higher numerical stability especially for bigger number of iterations
-        log_p_c_h = -tf.log(tf.sqrt(sigma_square)) + (tf.square(votes - miu) / (2 * sigma_square))
+        log_p_c_h = -tf.log(tf.sqrt(sigma_square)) - (tf.square(votes - miu) / (2 * sigma_square))
         log_p_c_h = log_p_c_h - (tf.reduce_max(log_p_c_h, axis=[2, 3], keep_dims=True) - tf.log(10.0))
         p_c = tf.exp(tf.reduce_sum(log_p_c_h, axis=3))
 
