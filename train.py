@@ -134,7 +134,7 @@ def main(args):
                 """Epoch wise linear annealling."""
                 if (step % num_batches_per_epoch) == 0:
                     if step > 0:
-                        m += (m_max - m_min) / (cfg.epoch * 0.2)
+                        m += (m_max - m_min) / (cfg.epoch * 0.6)
                         if m > m_max:
                             m = m_max
 
