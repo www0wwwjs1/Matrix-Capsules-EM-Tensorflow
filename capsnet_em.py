@@ -39,9 +39,9 @@ def spread_loss(output, y, m):
     loss = tf.reduce_mean(loss)
 
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    loss = tf.add_n([loss] + regularization)
+    loss_all = tf.add_n([loss] + regularization)
 
-    return loss
+    return loss_all, loss
 
 # input should be a tensor with size as [batch_size, height, width, channels]
 
