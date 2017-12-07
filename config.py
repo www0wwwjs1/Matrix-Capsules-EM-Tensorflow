@@ -11,7 +11,7 @@ flags.DEFINE_float('ac_lambda_step', 0.01,
 
 flags.DEFINE_integer('batch_size', 50, 'batch size')
 flags.DEFINE_integer('epoch', 50, 'epoch')
-flags.DEFINE_integer('iter_routing', 1, 'number of iterations')
+flags.DEFINE_integer('iter_routing', 4, 'number of iterations')
 flags.DEFINE_float('m_schedule', 0.2, 'the m will get to 0.9 at current epoch')
 flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
 
@@ -19,9 +19,9 @@ flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
 #    structure parameters      #
 ################################
 flags.DEFINE_integer('A', 32, 'number of channels in output from ReLU Conv1')
-flags.DEFINE_integer('B', 8, 'number of capsules in output from PrimaryCaps')
-flags.DEFINE_integer('C', 16, 'number of channels in output from ConvCaps1')
-flags.DEFINE_integer('D', 16, 'number of channels in output from ConvCaps2')
+flags.DEFINE_integer('B', 4, 'number of capsules in output from PrimaryCaps')
+flags.DEFINE_integer('C', 4, 'number of channels in output from ConvCaps1')
+flags.DEFINE_integer('D', 4, 'number of channels in output from ConvCaps2')
 
 ############################
 #   environment setting    #
