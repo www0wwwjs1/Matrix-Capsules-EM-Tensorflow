@@ -19,7 +19,7 @@ def cross_ent_loss(output, y):
     return loss
 
 
-def spread_loss(output, y, m):
+def spread_loss(output, pose_out, x, y, m):
     """
     # check NaN
     # See: https://stackoverflow.com/questions/40701712/how-to-check-nan-in-gradients-in-tensorflow-when-updating
@@ -28,8 +28,11 @@ def spread_loss(output, y, m):
     """
 
     num_class = int(output.get_shape()[-1])
+    data_size = int(x.get_shape()[1])
+
     y = tf.one_hot(y, num_class, dtype=tf.float32)
 
+    # spread loss
     output1 = tf.reshape(output, shape=[cfg.batch_size, 1, num_class])
     y = tf.expand_dims(y, axis=2)
     at = tf.matmul(output1, y)
@@ -38,10 +41,22 @@ def spread_loss(output, y, m):
     loss = tf.matmul(loss, 1. - y)
     loss = tf.reduce_mean(loss)
 
-    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    loss_all = tf.add_n([loss] + regularization)
+    # reconstruction loss
+    pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
 
-    return loss_all, loss
+    with tf.variable_scope('decoder'):
+        pose_out = slim.fully_connected(pose_out, 512, trainable=True)
+        pose_out = slim.fully_connected(pose_out, 1024, trainable=True)
+        pose_out = slim.fully_connected(pose_out, data_size*data_size, trainable=True, activation_fn=tf.sigmoid)
+
+        x = tf.reshape(x, shape=[cfg.batch_size, -1])
+        reconstruction_loss = tf.reduce_mean(tf.square(pose_out-x))
+
+    # regularization loss
+    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    loss_all = tf.add_n([loss] + [0.0005*reconstruction_loss] + regularization)#loss+0.0005*reconstruction_loss+regularization#
+
+    return loss_all, loss, reconstruction_loss
 
 # input should be a tensor with size as [batch_size, height, width, channels]
 
@@ -183,7 +198,13 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
         output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, data_size, data_size, 1], strides=[
                             1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, num_classes])
 
-    return output
+        if is_train:
+            pose = tf.nn.avg_pool(tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, -1]), ksize=[1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID')
+            pose_out = tf.reshape(pose, shape=[cfg.batch_size, num_classes, 18])
+        else:
+            pose_out = []
+
+    return output, pose_out
 
 
 def test_accuracy(logits, labels):

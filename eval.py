@@ -38,7 +38,7 @@ def main(args):
 
         batch_x, batch_labels = create_inputs()
         # normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=False)
-        output = net.build_arch(batch_x, coord_add,
+        output, _ = net.build_arch(batch_x, coord_add,
                                 is_train=False, num_classes=num_classes)
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()

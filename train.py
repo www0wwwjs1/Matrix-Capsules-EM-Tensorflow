@@ -56,11 +56,12 @@ def main(args):
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
                 # normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=False)
-                output = net.build_arch(batch_x, coord_add, is_train=True,
+                output, pose_out = net.build_arch(batch_x, coord_add, is_train=True,
                                         num_classes=num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
-                loss, loss_out = net.spread_loss(output, batch_labels, m_op)
-                tf.summary.scalar('spread_loss', loss_out)
+                loss, spread_loss, mse = net.spread_loss(output, pose_out, batch_x, batch_labels, m_op)
+                tf.summary.scalar('spread_loss', spread_loss)
+                tf.summary.scalar('reconstruction_loss', mse)
                 tf.summary.scalar('all_loss', loss)
 
             """Compute gradient."""
