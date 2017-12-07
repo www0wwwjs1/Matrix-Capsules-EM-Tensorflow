@@ -66,7 +66,7 @@ def main(args):
             grad = opt.compute_gradients(loss)
             # See: https://stackoverflow.com/questions/40701712/how-to-check-nan-in-gradients-in-tensorflow-when-updating
             grad_check = [tf.check_numerics(g, message='Gradient NaN Found!')
-                          for g, _ in grad] + [tf.check_numerics(loss, message='Loss NaN Found')]
+                          for g, _ in grad if g is not None] + [tf.check_numerics(loss, message='Loss NaN Found')]
 
         """Apply graident."""
         with tf.control_dependencies(grad_check):
