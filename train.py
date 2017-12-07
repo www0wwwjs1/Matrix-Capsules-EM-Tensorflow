@@ -59,8 +59,9 @@ def main(args):
                 output = net.build_arch(batch_x, coord_add, is_train=True,
                                         num_classes=num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
-                loss = net.spread_loss(output, batch_labels, m_op)
-                tf.summary.scalar('spread_loss', loss)
+                loss, loss_out = net.spread_loss(output, batch_labels, m_op)
+                tf.summary.scalar('spread_loss', loss_out)
+                tf.summary.scalar('all_loss', loss)
 
             """Compute gradient."""
             grad = opt.compute_gradients(loss)
@@ -112,7 +113,7 @@ def main(args):
         m_min = 0.2
         m_max = 0.9
         m = m_min
-        for step in range(cfg.epoch * num_batches_per_epoch):
+        for step in range(cfg.epoch * num_batches_per_epoch+1):
             tic = time.time()
             """"TF queue would pop batch until no file"""
             try:
@@ -134,7 +135,7 @@ def main(args):
                 """Epoch wise linear annealling."""
                 if (step % num_batches_per_epoch) == 0:
                     if step > 0:
-                        m += (m_max - m_min) / (cfg.epoch * 0.2)
+                        m += (m_max - m_min) / (cfg.epoch * cfg.m_schedule)
                         if m > m_max:
                             m = m_max
 
