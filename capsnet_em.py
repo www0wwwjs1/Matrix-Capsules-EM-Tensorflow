@@ -223,21 +223,17 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     caps_num_i = int(activation.get_shape()[1])
     n_channels = int(votes.get_shape()[-1])
 
-    # create identities but the backpropagate is stopped
-    activation_stop = tf.stop_gradient(activation)  # activation
-    votes_stop = tf.stop_gradient(votes)  # votes
-
     # m-step
     r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / caps_num_c)
-    r = r * activation_stop
+    r = r * activation
 
     # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
     r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)
     r1 = tf.reshape(r / (r_sum + cfg.epsilon),
                     shape=[batch_size, caps_num_i, caps_num_c, 1])
 
-    miu = tf.reduce_sum(votes_stop * r1, axis=1, keep_dims=True)
-    sigma_square = tf.reduce_sum(tf.square(votes_stop - miu) * r1,
+    miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
+    sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1,
                                  axis=1, keep_dims=True) + cfg.epsilon
 
     beta_v = slim.variable('beta_v', shape=[caps_num_c, n_channels], dtype=tf.float32,
@@ -254,17 +250,12 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
     for iters in range(cfg.iter_routing):
 
-        # At last iteration, use the originals to compute in order to backpropagate gradient
-        if iters == cfg.iter_routing:
-            activation_stop = activation
-            votes_stop = votes
-
         # e-step
 
         # Contributor: Yunzhi Shi
         # log and exp here provide higher numerical stability especially for bigger number of iterations
         log_p_c_h = -tf.log(tf.sqrt(sigma_square)) - \
-            (tf.square(votes_stop - miu) / (2 * sigma_square))
+            (tf.square(votes - miu) / (2 * sigma_square))
         log_p_c_h = log_p_c_h - \
             (tf.reduce_max(log_p_c_h, axis=[2, 3], keep_dims=True) - tf.log(10.0))
         p_c = tf.exp(tf.reduce_sum(log_p_c_h, axis=3))
@@ -276,15 +267,15 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
         r = ap / (sum_ap + cfg.epsilon)
 
         # m-step
-        r = r * activation_stop
+        r = r * activation
 
         r_sum = tf.reduce_sum(r, axis=1,
                               keep_dims=True)  # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
         r1 = tf.reshape(r / (r_sum + cfg.epsilon),
                         shape=[batch_size, caps_num_i, caps_num_c, 1])
 
-        miu = tf.reduce_sum(votes_stop * r1, axis=1, keep_dims=True)
-        sigma_square = tf.reduce_sum(tf.square(votes_stop - miu) * r1,
+        miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
+        sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1,
                                      axis=1, keep_dims=True) + cfg.epsilon
 
         r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
