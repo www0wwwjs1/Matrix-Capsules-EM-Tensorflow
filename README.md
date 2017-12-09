@@ -23,17 +23,18 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 - Configuration: A=32, B=8, C=16, D=16, batch_size=32, iteration number of EM routing: 2, with Coordinate Addition, spread loss, test accuracy is 79.8%.
 
 > **Current Results on MNIST:**
-- Configuration: A=32, B=8, C=16, D=16, batch_size=32, iteration number of EM routing: 2, with Coordinate Addition, spread loss
+- Configuration: A=32, B=8, C=16, D=16, batch_size=50, iteration number of EM routing: 2, with Coordinate Addition, spread loss, batch normalization, reconstruction loss.
 
-- Training loss. Some variations of training loss can be observed, however test accuracy is stable.
+- Training loss.
 ![spread loss](imgs/training_loss.png)
 
-- Test accuracy(current best result is 99.1%)
+- Test accuracy(current best result is 99.3%, only 10% samples are used in test)
 ![test_acc](imgs/test_accuracy.png)
 
 > **Ablation Study on MNIST:**
 - Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, no Coordinate Addition, cross entropy loss, test accuracy is 96.4%.
 - Configuration: A=32, B=4, C=4, D=4, batch_size=128, iteration number of EM routing: 2, with Coordinate Addition, cross entropy loss, test accuracy is 96.8%.
+- Configuration: A=32, B=8, C=16, D=16, batch_size=32, iteration number of EM routing: 2, with Coordinate Addition, spread loss 99.1%.
 
 > **To Do List:**
 > 1. Experiments on smallNORB as in paper is about to be casted.
