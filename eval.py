@@ -7,9 +7,9 @@ E-mail: zhangsuofei at njupt.edu.cn | hangyu5 at illinois.edu
 import tensorflow as tf
 from config import cfg, get_coord_add, get_dataset_size_train, get_dataset_size_test, get_num_classes, get_create_inputs
 import time
-import numpy as np
 import os
 import capsnet_em as net
+import tensorflow.contrib.slim as slim
 
 import logging
 import daiquiri
@@ -37,7 +37,7 @@ def main(args):
         num_batches_test = int(dataset_size_test / cfg.batch_size * 0.1)
 
         batch_x, batch_labels = create_inputs()
-        # normalized_batch_x = tf.contrib.layers.batch_norm(batch_x, is_training=False)
+        batch_x = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
         output, _ = net.build_arch(batch_x, coord_add,
                                 is_train=False, num_classes=num_classes)
         batch_acc = net.test_accuracy(output, batch_labels)
@@ -60,7 +60,7 @@ def main(args):
                 cfg.test_logdir, graph=sess.graph)  # graph=sess.graph, huge!
 
             files = os.listdir(cfg.logdir)
-            for epoch in range(cfg.epoch):
+            for epoch in range(1, cfg.epoch):
                 # requires a regex to adapt the loss value in the file name here
                 ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
                 for __file in files:
