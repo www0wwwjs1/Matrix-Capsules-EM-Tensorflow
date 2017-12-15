@@ -55,11 +55,13 @@ def main(args):
         m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
+                batch_squash = tf.divide(batch_x, 255.)
                 batch_x = slim.batch_norm(batch_x, center=False, is_training=True, trainable=True)
                 output, pose_out = net.build_arch(batch_x, coord_add, is_train=True,
-                                        num_classes=num_classes)
+                                                  num_classes=num_classes)
                 # loss = net.cross_ent_loss(output, batch_labels)
-                loss, spread_loss, mse = net.spread_loss(output, pose_out, batch_x, batch_labels, m_op)
+                loss, spread_loss, mse = net.spread_loss(
+                    output, pose_out, batch_squash, batch_labels, m_op)
                 tf.summary.scalar('spread_loss', spread_loss)
                 tf.summary.scalar('reconstruction_loss', mse)
                 tf.summary.scalar('all_loss', loss)
@@ -114,7 +116,7 @@ def main(args):
         m_min = 0.2
         m_max = 0.9
         m = m_min
-        for step in range(cfg.epoch * num_batches_per_epoch+1):
+        for step in range(cfg.epoch * num_batches_per_epoch + 1):
             tic = time.time()
             """"TF queue would pop batch until no file"""
             try:
