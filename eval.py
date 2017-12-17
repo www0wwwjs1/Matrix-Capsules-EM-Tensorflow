@@ -46,7 +46,7 @@ def main(args):
             output = net.build_arch_baseline(batch_x,
                                              is_train=False, num_classes=num_classes)
         else:
-            raise "Please select model from 'caps' or 'cnn' as the secondary argument of eval.py!"
+            raise "Please select model from 'caps' or 'cnn_baseline' as the secondary argument of eval.py!"
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
