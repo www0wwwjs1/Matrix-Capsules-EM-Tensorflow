@@ -68,7 +68,7 @@ def main(args):
             summary_writer = tf.summary.FileWriter(
                 cfg.test_logdir + '/{}/{}/'.format(model_name, dataset_name), graph=sess.graph)  # graph=sess.graph, huge!
 
-            files = os.listdir(cfg.logdir)
+            files = os.listdir(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name))
             for epoch in range(1, cfg.epoch):
                 # requires a regex to adapt the loss value in the file name here
                 ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
