@@ -52,18 +52,13 @@ def main(args):
         # batch_y = tf.one_hot(batch_labels, depth=10, axis=1, dtype=tf.float32)
 
         """Define the dataflow graph."""
-        m_op = tf.placeholder(dtype=tf.float32, shape=())
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
-                batch_squash = tf.divide(batch_x, 255.)
                 batch_x = slim.batch_norm(batch_x, center=False, is_training=True, trainable=True)
-                output, pose_out = net.build_arch(batch_x, coord_add, is_train=True,
-                                                  num_classes=num_classes)
-                # loss = net.cross_ent_loss(output, batch_labels)
-                loss, spread_loss, mse = net.spread_loss(
-                    output, pose_out, batch_squash, batch_labels, m_op)
-                tf.summary.scalar('spread_loss', spread_loss)
-                tf.summary.scalar('reconstruction_loss', mse)
+                output = net.build_arch_baseline(batch_x, is_train=True,
+                                                 num_classes=num_classes)
+                loss = net.cross_ent_loss(output, batch_labels)
+
                 tf.summary.scalar('all_loss', loss)
 
             """Compute gradient."""
@@ -107,21 +102,18 @@ def main(args):
         threads = tf.train.start_queue_runners(sess=sess, coord=coord)
 
         """Set summary writer"""
-        if not os.path.exists(cfg.logdir + '/caps/{}/train_log/'.format(dataset_name)):
-            os.makedirs(cfg.logdir + '/caps/{}/train_log/'.format(dataset_name))
+        if not os.path.exists(cfg.logdir + '/cnn_baseline/{}/train_log/'.format(dataset_name)):
+            os.makedirs(cfg.logdir + '/cnn_baseline/{}/train_log/'.format(dataset_name))
         summary_writer = tf.summary.FileWriter(
-            cfg.logdir + '/caps/{}/train_log/'.format(dataset_name), graph=sess.graph)  # graph = sess.graph, huge!
+            cfg.logdir + '/cnn_baseline/{}/train_log/'.format(dataset_name), graph=sess.graph)
 
         """Main loop."""
-        m_min = 0.2
-        m_max = 0.9
-        m = m_min
         for step in range(cfg.epoch * num_batches_per_epoch + 1):
             tic = time.time()
             """"TF queue would pop batch until no file"""
             try:
                 _, loss_value, summary_str = sess.run(
-                    [train_op, loss, summary_op], feed_dict={m_op: m})
+                    [train_op, loss, summary_op])
                 logger.info('%d iteration finishs in ' % step + '%f second' %
                             (time.time() - tic) + ' loss=%f' % loss_value)
             except KeyboardInterrupt:
@@ -137,14 +129,10 @@ def main(args):
 
                 """Epoch wise linear annealling."""
                 if (step % num_batches_per_epoch) == 0:
-                    if step > 0:
-                        m += (m_max - m_min) / (cfg.epoch * cfg.m_schedule)
-                        if m > m_max:
-                            m = m_max
 
                     """Save model periodically"""
                     ckpt_path = os.path.join(
-                        cfg.logdir + '/caps/{}/'.format(dataset_name), 'model-{:.4f}.ckpt'.format(loss_value))
+                        cfg.logdir + '/cnn_baseline/{}'.format(dataset_name), 'model-{:.4f}.ckpt'.format(loss_value))
                     saver.save(sess, ckpt_path, global_step=step)
 
         """Join threads"""

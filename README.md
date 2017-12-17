@@ -79,28 +79,33 @@ Start the training(smallNORB):
 $ python3 train.py "smallNORB"
 ```
 
+Start the training(CNN baseline):
+```
+$ python3 train_baseline.py "smallNORB"
+```
+
 **Step 4.**
 View the status of training:
 ```
-$ tensorboard --logdir=./logdir/train_log/
+$ tensorboard --logdir=./logdir/{model_name}/{dataset_name}/train_log/
 ```
 Open the url tensorboard has shown.
 
 **Step 5.**
 Start the test on MNIST:
 ```
-$ python3 eval.py "mnist"
+$ python3 eval.py "mnist" "caps"
 ```
 
 Start the test on smallNORB:
 ```
-$ python3 eval.py "smallNORB"
+$ python3 eval.py "smallNORB" "caps"
 ```
 
 **Step 6.**
 View the status of test:
 ```
-$ tensorboard --logdir=./test_logdir
+$ tensorboard --logdir=./test_logdir/{model_name}/{dataset_name}/
 ```
 Open the url tensorboard has shown.
 

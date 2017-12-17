@@ -20,8 +20,9 @@ logger = daiquiri.getLogger(__name__)
 
 def main(args):
     """Get dataset hyperparameters."""
-    assert len(args) == 2 and isinstance(args[1], str)
+    assert len(args) == 3 and isinstance(args[1], str) and isinstance(args[2], str)
     dataset_name = args[1]
+    model_name = args[2]
     coord_add = get_coord_add(dataset_name)
     dataset_size_train = get_dataset_size_train(dataset_name)
     dataset_size_test = get_dataset_size_test(dataset_name)
@@ -38,8 +39,14 @@ def main(args):
 
         batch_x, batch_labels = create_inputs()
         batch_x = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
-        output, _ = net.build_arch(batch_x, coord_add,
-                                is_train=False, num_classes=num_classes)
+        if model_name == "caps":
+            output, _ = net.build_arch(batch_x, coord_add,
+                                       is_train=False, num_classes=num_classes)
+        elif model_name == "cnn":
+            output = net.build_arch_baseline(batch_x,
+                                             is_train=False, num_classes=num_classes)
+        else:
+            raise "Please select model from 'caps' or 'cnn' as the secondary argument of eval.py!"
         batch_acc = net.test_accuracy(output, batch_labels)
         saver = tf.train.Saver()
 
@@ -56,8 +63,10 @@ def main(args):
 
             coord = tf.train.Coordinator()
             threads = tf.train.start_queue_runners(sess=sess, coord=coord)
+            if not os.path.exists(cfg.test_logdir + '/{}/{}/'.format(model_name, dataset_name)):
+                os.makedirs(cfg.test_logdir + '/{}/{}/'.format(model_name, dataset_name))
             summary_writer = tf.summary.FileWriter(
-                cfg.test_logdir, graph=sess.graph)  # graph=sess.graph, huge!
+                cfg.test_logdir + '/{}/{}/'.format(model_name, dataset_name), graph=sess.graph)  # graph=sess.graph, huge!
 
             files = os.listdir(cfg.logdir)
             for epoch in range(1, cfg.epoch):

@@ -47,14 +47,16 @@ def spread_loss(output, pose_out, x, y, m):
     with tf.variable_scope('decoder'):
         pose_out = slim.fully_connected(pose_out, 512, trainable=True)
         pose_out = slim.fully_connected(pose_out, 1024, trainable=True)
-        pose_out = slim.fully_connected(pose_out, data_size*data_size, trainable=True, activation_fn=tf.sigmoid)
+        pose_out = slim.fully_connected(pose_out, data_size * data_size,
+                                        trainable=True, activation_fn=tf.sigmoid)
 
         x = tf.reshape(x, shape=[cfg.batch_size, -1])
-        reconstruction_loss = tf.reduce_mean(tf.square(pose_out-x))
+        reconstruction_loss = tf.reduce_mean(tf.square(pose_out - x))
 
     # regularization loss
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    loss_all = tf.add_n([loss] + [0.0005*reconstruction_loss] + regularization)#loss+0.0005*reconstruction_loss+regularization#
+    # loss+0.0005*reconstruction_loss+regularization#
+    loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
 
     return loss_all, loss, reconstruction_loss
 
@@ -102,6 +104,40 @@ def mat_transform(input, caps_num_c, regularizer, tag=False):
     return votes
 
 
+def build_arch_baseline(input, is_train: bool, num_classes: int):
+
+    bias_initializer = tf.truncated_normal_initializer(
+        mean=0.0, stddev=0.01)  # tf.constant_initializer(0.0)
+    # The paper didnot mention any regularization, a common l2 regularizer to weights is added here
+    weights_regularizer = tf.contrib.layers.l2_regularizer(5e-04)
+
+    tf.logging.info('input shape: {}'.format(input.get_shape()))
+
+    # weights_initializer=initializer,
+    with slim.arg_scope([slim.conv2d, slim.fully_connected], trainable=is_train, biases_initializer=bias_initializer, weights_regularizer=weights_regularizer):
+        with tf.variable_scope('relu_conv1') as scope:
+            output = slim.conv2d(input, num_outputs=32, kernel_size=[
+                                 5, 5], stride=1, padding='SAME', scope=scope, activation_fn=tf.nn.relu)
+            output = slim.max_pool2d(output, [2, 2], scope='max_2d_layer1')
+
+            tf.logging.info('output shape: {}'.format(output.get_shape()))
+
+        with tf.variable_scope('relu_conv2') as scope:
+            output = slim.conv2d(output, num_outputs=64, kernel_size=[
+                                 5, 5], stride=1, padding='SAME', scope=scope, activation_fn=tf.nn.relu)
+            output = slim.max_pool2d(output, [2, 2], scope='max_2d_layer2')
+
+            tf.logging.info('output shape: {}'.format(output.get_shape()))
+
+        output = slim.flatten(output)
+        output = slim.fully_connected(output, 1024, scope='relu_fc3', activation_fn=tf.nn.relu)
+        tf.logging.info('output shape: {}'.format(output.get_shape()))
+        output = slim.dropout(output, 0.5, scope='dp')
+        output = slim.fully_connected(output, num_classes, scope='final_layer', activation_fn=None)
+        tf.logging.info('output shape: {}'.format(output.get_shape()))
+        return output
+
+
 def build_arch(input, coord_add, is_train: bool, num_classes: int):
     test1 = []
     data_size = int(input.get_shape()[1])
@@ -113,26 +149,30 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
     # The paper didnot mention any regularization, a common l2 regularizer to weights is added here
     weights_regularizer = tf.contrib.layers.l2_regularizer(5e-04)
 
+    tf.logging.info('input shape: {}'.format(input.get_shape()))
+
     # weights_initializer=initializer,
     with slim.arg_scope([slim.conv2d], trainable=is_train, biases_initializer=bias_initializer, weights_regularizer=weights_regularizer):
         with tf.variable_scope('relu_conv1') as scope:
             output = slim.conv2d(input, num_outputs=cfg.A, kernel_size=[
-                                 5, 5], stride=2, padding='VALID', scope=scope)
+                                 5, 5], stride=2, padding='VALID', scope=scope, activation_fn=tf.nn.relu)
             data_size = int(np.floor((data_size - 4) / 2))
 
             assert output.get_shape() == [cfg.batch_size, data_size, data_size, cfg.A]
+            tf.logging.info('conv1 output shape: {}'.format(output.get_shape()))
 
         with tf.variable_scope('primary_caps') as scope:
             pose = slim.conv2d(output, num_outputs=cfg.B * 16,
                                kernel_size=[1, 1], stride=1, padding='VALID', scope=scope, activation_fn=None)
             activation = slim.conv2d(output, num_outputs=cfg.B, kernel_size=[
-                                     1, 1], stride=1, padding='VALID', activation_fn=tf.nn.sigmoid)
+                                     1, 1], stride=1, padding='VALID', scope='primary_caps/activation', activation_fn=tf.nn.sigmoid)
             pose = tf.reshape(pose, shape=[cfg.batch_size, data_size, data_size, cfg.B, 16])
             activation = tf.reshape(
                 activation, shape=[cfg.batch_size, data_size, data_size, cfg.B, 1])
             output = tf.concat([pose, activation], axis=4)
             output = tf.reshape(output, shape=[cfg.batch_size, data_size, data_size, -1])
             assert output.get_shape() == [cfg.batch_size, data_size, data_size, cfg.B * 17]
+            tf.logging.info('primary capsule output shape: {}'.format(output.get_shape()))
 
         with tf.variable_scope('conv_caps1') as scope:
             output = kernel_tile(output, 3, 2)
@@ -144,15 +184,23 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
 
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(output[:, :, :16], cfg.C, weights_regularizer, tag=True)
+                tf.logging.info('conv cap 1 votes shape: {}'.format(votes.get_shape()))
 
             with tf.variable_scope('routing') as scope:
                 miu, activation, _ = em_routing(votes, activation, cfg.C, weights_regularizer)
+                tf.logging.info('conv cap 1 miu shape: {}'.format(miu.get_shape()))
+                tf.logging.info('conv cap 1 activation before reshape: {}'.format(
+                    activation.get_shape()))
 
             pose = tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, cfg.C, 16])
+            tf.logging.info('conv cap 1 pose shape: {}'.format(pose.get_shape()))
             activation = tf.reshape(
                 activation, shape=[cfg.batch_size, data_size, data_size, cfg.C, 1])
+            tf.logging.info('conv cap 1 activation after reshape: {}'.format(
+                activation.get_shape()))
             output = tf.reshape(tf.concat([pose, activation], axis=4), [
                                 cfg.batch_size, data_size, data_size, -1])
+            tf.logging.info('conv cap 1 output shape: {}'.format(output.get_shape()))
 
         with tf.variable_scope('conv_caps2') as scope:
             output = kernel_tile(output, 3, 1)
@@ -164,13 +212,16 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
 
             with tf.variable_scope('v') as scope:
                 votes = mat_transform(output[:, :, :16], cfg.D, weights_regularizer)
+                tf.logging.info('conv cap 2 votes shape: {}'.format(votes.get_shape()))
 
             with tf.variable_scope('routing') as scope:
                 miu, activation, _ = em_routing(votes, activation, cfg.D, weights_regularizer)
 
             pose = tf.reshape(miu, shape=[cfg.batch_size * data_size * data_size, cfg.D, 16])
+            tf.logging.info('conv cap 2 pose shape: {}'.format(votes.get_shape()))
             activation = tf.reshape(
                 activation, shape=[cfg.batch_size * data_size * data_size, cfg.D, 1])
+            tf.logging.info('conv cap 2 activation shape: {}'.format(activation.get_shape()))
 
         # It is not clear from the paper that ConvCaps2 is full connected to Class Capsules, or is conv connected with kernel size of 1*1 and a global average pooling.
         # From the description in Figure 1 of the paper and the amount of parameters (310k in the paper and 316,853 in fact), I assume a conv cap plus a golbal average pooling is the design.
@@ -180,25 +231,31 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
 
                 assert votes.get_shape() == [cfg.batch_size * data_size *
                                              data_size, cfg.D, num_classes, 16]
+                tf.logging.info('class cap votes original shape: {}'.format(votes.get_shape()))
 
                 coord_add = np.reshape(coord_add, newshape=[data_size * data_size, 1, 1, 2])
                 coord_add = np.tile(coord_add, [cfg.batch_size, cfg.D, num_classes, 1])
                 coord_add_op = tf.constant(coord_add, dtype=tf.float32)
 
                 votes = tf.concat([coord_add_op, votes], axis=3)
+                tf.logging.info('class cap votes coord add shape: {}'.format(votes.get_shape()))
 
             with tf.variable_scope('routing') as scope:
                 miu, activation, test2 = em_routing(
                     votes, activation, num_classes, weights_regularizer)
+                tf.logging.info(
+                    'class cap activation shape: {}'.format(activation.get_shape()))
 
             output = tf.reshape(activation, shape=[
                                 cfg.batch_size, data_size, data_size, num_classes])
 
         output = tf.reshape(tf.nn.avg_pool(output, ksize=[1, data_size, data_size, 1], strides=[
                             1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, num_classes])
+        tf.logging.info('class cap output shape: {}'.format(output.get_shape()))
 
         if is_train:
-            pose = tf.nn.avg_pool(tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, -1]), ksize=[1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID')
+            pose = tf.nn.avg_pool(tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, -1]), ksize=[
+                                  1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID')
             pose_out = tf.reshape(pose, shape=[cfg.batch_size, num_classes, 18])
         else:
             pose_out = []
