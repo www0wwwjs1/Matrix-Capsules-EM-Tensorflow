@@ -28,15 +28,15 @@ def create_inputs_norb(is_train: bool, epochs: int):
 
     image, label = norb.read_norb_tfrecord(chunk_files, epochs)
 
-    # TODO: is it the right order: add noise, resize, then corp?
-    image = tf.image.random_brightness(image, max_delta=32. / 255.)
-    image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
-
-    image = tf.image.resize_images(image, [48, 48])
-
     if is_train:
+        # TODO: is it the right order: add noise, resize, then corp?
+        image = tf.image.random_brightness(image, max_delta=32. / 255.)
+        image = tf.image.random_contrast(image, lower=0.5, upper=1.5)
+
+        image = tf.image.resize_images(image, [48, 48])
         image = tf.random_crop(image, [32, 32, 1])
     else:
+        image = tf.image.resize_images(image, [48, 48])
         image = tf.slice(image, [8, 8, 0], [32, 32, 1])
 
     x, y = tf.train.shuffle_batch([image, label], num_threads=cfg.num_threads, batch_size=cfg.batch_size, capacity=cfg.batch_size * 64,
