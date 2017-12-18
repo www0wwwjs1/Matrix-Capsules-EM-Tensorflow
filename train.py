@@ -62,9 +62,11 @@ def main(args):
                 # loss = net.cross_ent_loss(output, batch_labels)
                 loss, spread_loss, mse = net.spread_loss(
                     output, pose_out, batch_squash, batch_labels, m_op)
+                acc = net.test_accuracy(output, batch_labels)
                 tf.summary.scalar('spread_loss', spread_loss)
                 tf.summary.scalar('reconstruction_loss', mse)
                 tf.summary.scalar('all_loss', loss)
+                tf.summary.scalar('train_acc', acc)
 
             """Compute gradient."""
             grad = opt.compute_gradients(loss)

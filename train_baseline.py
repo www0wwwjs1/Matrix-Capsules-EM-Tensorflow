@@ -58,7 +58,8 @@ def main(args):
                 output = net.build_arch_baseline(batch_x, is_train=True,
                                                  num_classes=num_classes)
                 loss = net.cross_ent_loss(output, batch_labels)
-
+                acc = net.test_accuracy(output, batch_labels)
+                tf.summary.scalar('train_acc', acc)
                 tf.summary.scalar('all_loss', loss)
 
             """Compute gradient."""
