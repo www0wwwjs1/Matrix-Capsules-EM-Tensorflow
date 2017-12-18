@@ -42,7 +42,7 @@ def main(args):
         if model_name == "caps":
             output, _ = net.build_arch(batch_x, coord_add,
                                        is_train=False, num_classes=num_classes)
-        elif model_name == "cnn":
+        elif model_name == "cnn_baseline":
             output = net.build_arch_baseline(batch_x,
                                              is_train=False, num_classes=num_classes)
         else:
@@ -74,7 +74,7 @@ def main(args):
                 ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
                 for __file in files:
                     if __file.endswith(ckpt_re + ".index"):
-                        ckpt = os.path.join(cfg.logdir, __file[:-6])
+                        ckpt = os.path.join(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name), __file[:-6])
                 # ckpt = os.path.join(cfg.logdir, "model.ckpt-%d" % (num_batches_per_epoch_train * epoch))
                 saver.restore(sess, ckpt)
 
