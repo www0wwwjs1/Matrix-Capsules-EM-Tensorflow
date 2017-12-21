@@ -16,7 +16,7 @@ A Tensorflow implementation of CapsNet based on paper [Matrix Capsules with EM R
 - Training loss. Variation of loss is suppressed by batch normalization. However there still exists a gap between our best results and the reported results in the original paper.
 ![spread loss](imgs/spread_loss_norb.png)
 
-- Test accuracy(current best result is 87.66%)
+- Test accuracy(current best result is 91.8%)
 ![test_acc](imgs/test_accuracy_norb.png)
 
 > **Ablation Study on smallNORB:**
