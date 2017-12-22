@@ -1,13 +1,11 @@
 ###Contributor: Hang Yu
 
-```Please``` place dataset in this folder
-
 ---
 
 ```chmod +x download.sh;./download.sh```
 
-It will take a few minutes, the whole data set is about 900MB unzipped under the ```smallNORB``` folder.
+Download will take a few minutes or seconds, the whole data set is about 900MB unzipped. They are placed under the ```smallNORB``` folder.
 
-The TFRecord generated is about 3.6GB each train and test dataset. But you can write only a proportion by modifying        ```smallNORB.py```. Don't worry, it's fast as tensorflow api employs multithreading.
+We will generate TFRecord about 3.6GB for both train and test dataset. Tensorflow api employs multithreading, so this process would be fast (within a minute).
 
-Under ```data``` folder, type ```python smallNORB.py tfrecord```. You will see multiple tfrecords with extension ```tfrecord```. Follow the instructions in ```test``` method in ```smallNORB.py``` to read files and parse them into batches
+~~Under ```data``` folder, type ```python smallNORB.py tfrecord```. You will see multiple tfrecords with extension ```tfrecord```. Follow the instructions in ```test``` method in ```smallNORB.py``` to read files and parse them into batches.~~
