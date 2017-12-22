@@ -58,7 +58,7 @@ def spread_loss(output, pose_out, x, y, m):
     # loss+0.0005*reconstruction_loss+regularization#
     loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
 
-    return loss_all, loss, reconstruction_loss
+    return loss_all, loss, reconstruction_loss, pose_out
 
 # input should be a tensor with size as [batch_size, height, width, channels]
 
@@ -245,6 +245,8 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
                     votes, activation, num_classes, weights_regularizer)
                 tf.logging.info(
                     'class cap activation shape: {}'.format(activation.get_shape()))
+                tf.summary.histogram(name="class_cap_routing_hist",
+                                     values=test2, family="Experiment")
 
             output = tf.reshape(activation, shape=[
                                 cfg.batch_size, data_size, data_size, num_classes])
@@ -304,6 +306,8 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
                            regularizer=regularizer)
     activation1 = tf.nn.sigmoid(cfg.ac_lambda0 * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 
+    test.append(miu)
+
     for iters in range(cfg.iter_routing):
 
         # e-step
@@ -340,5 +344,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         activation1 = tf.nn.sigmoid(
             (cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a - tf.reduce_sum(cost_h, axis=2)))
+
+        test.append(miu)
 
     return miu, activation1, test
