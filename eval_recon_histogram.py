@@ -41,15 +41,15 @@ def main(args):
         batch_x_norm = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
         output, pose_out = net.build_arch(batch_x_norm, coord_add,
                                           is_train=False, num_classes=num_classes)
-        batch_acc = net.test_accuracy(output, batch_labels)
+        tf.logging.debug(pose_out.get_shape())
 
+        batch_acc = net.test_accuracy(output, batch_labels)
+        m_op = tf.constant(0.9)
         loss, spread_loss, mse, recon_img_squash = net.spread_loss(
             output, pose_out, batch_squash, batch_labels, m_op)
-        acc = net.test_accuracy(output, batch_labels)
         tf.summary.scalar('spread_loss', spread_loss)
         tf.summary.scalar('reconstruction_loss', mse)
         tf.summary.scalar('all_loss', loss)
-        tf.summary.scalar('train_acc', acc)
         recon_img = tf.multiply(tf.reshape(recon_img_squash, shape=[
                                 cfg.batch_size, 32, 32, 1]), 255.)
         orig_img = tf.reshape(batch_x, shape=[
