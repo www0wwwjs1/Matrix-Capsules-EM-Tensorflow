@@ -10,13 +10,34 @@ from config import cfg
 import numpy as np
 
 
-def cross_ent_loss(output, y):
+def cross_ent_loss(output, x, y):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=output)
     loss = tf.reduce_mean(loss)
-    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    loss = tf.add_n([loss] + regularization)
+    num_class = int(output.get_shape()[-1])
+    data_size = int(x.get_shape()[1])
 
-    return loss
+    # reconstruction loss
+    y = tf.one_hot(y, num_class, dtype=tf.float32)
+    y = tf.expand_dims(y, axis=2)
+    output = tf.expand_dims(output, axis=2)
+    output = tf.reshape(tf.multiply(output, y), shape=[cfg.batch_size, -1])
+    tf.logging.info("decoder input value dimension:{}".format(output.get_shape()))
+
+    with tf.variable_scope('decoder'):
+        output = slim.fully_connected(output, 512, trainable=True)
+        output = slim.fully_connected(output, 1024, trainable=True)
+        output = slim.fully_connected(output, data_size * data_size,
+                                      trainable=True, activation_fn=tf.sigmoid)
+
+        x = tf.reshape(x, shape=[cfg.batch_size, -1])
+        reconstruction_loss = tf.reduce_mean(tf.square(output - x))
+
+    # regularization loss
+    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+    # loss+0.0005*reconstruction_loss+regularization#
+    loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
+
+    return loss_all, reconstruction_loss, output
 
 
 def spread_loss(output, pose_out, x, y, m):
@@ -42,7 +63,8 @@ def spread_loss(output, pose_out, x, y, m):
     loss = tf.reduce_mean(loss)
 
     # reconstruction loss
-    pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
+    pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
+    tf.logging.info("decoder input value dimension:{}".format(pose_out.get_shape()))
 
     with tf.variable_scope('decoder'):
         pose_out = slim.fully_connected(pose_out, 512, trainable=True)
@@ -58,7 +80,7 @@ def spread_loss(output, pose_out, x, y, m):
     # loss+0.0005*reconstruction_loss+regularization#
     loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
 
-    return loss_all, loss, reconstruction_loss
+    return loss_all, loss, reconstruction_loss, pose_out
 
 # input should be a tensor with size as [batch_size, height, width, channels]
 
@@ -245,6 +267,8 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
                     votes, activation, num_classes, weights_regularizer)
                 tf.logging.info(
                     'class cap activation shape: {}'.format(activation.get_shape()))
+                tf.summary.histogram(name="class_cap_routing_hist",
+                                     values=test2)
 
             output = tf.reshape(activation, shape=[
                                 cfg.batch_size, data_size, data_size, num_classes])
@@ -253,12 +277,9 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
                             1, 1, 1, 1], padding='VALID'), shape=[cfg.batch_size, num_classes])
         tf.logging.info('class cap output shape: {}'.format(output.get_shape()))
 
-        if is_train:
-            pose = tf.nn.avg_pool(tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, -1]), ksize=[
-                                  1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID')
-            pose_out = tf.reshape(pose, shape=[cfg.batch_size, num_classes, 18])
-        else:
-            pose_out = []
+        pose = tf.nn.avg_pool(tf.reshape(miu, shape=[cfg.batch_size, data_size, data_size, -1]), ksize=[
+                              1, data_size, data_size, 1], strides=[1, 1, 1, 1], padding='VALID')
+        pose_out = tf.reshape(pose, shape=[cfg.batch_size, num_classes, 18])
 
     return output, pose_out
 
@@ -304,6 +325,8 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
                            regularizer=regularizer)
     activation1 = tf.nn.sigmoid(cfg.ac_lambda0 * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 
+    test.append(miu)
+
     for iters in range(cfg.iter_routing):
 
         # e-step
@@ -340,5 +363,7 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
 
         activation1 = tf.nn.sigmoid(
             (cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a - tf.reduce_sum(cost_h, axis=2)))
+
+        test.append(miu)
 
     return miu, activation1, test

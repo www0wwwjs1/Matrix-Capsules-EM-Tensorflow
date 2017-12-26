@@ -74,6 +74,15 @@ Start the training(MNIST):
 $ python3 train.py "mnist"
 ```
 
+**Step 4.**
+Download the [Fashion MNIST dataset](https://github.com/zalandoresearch/fashion-mnist), ``mv`` and extract it into ``data/fashion_mnist`` directory.(Be careful the backslash appeared around the curly braces when you copy the ``wget `` command to your terminal, remove it)
+
+```
+$ mkdir -p data/fashion_mnist
+$ wget -c -P data/fashion_mnist http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/{train-images-idx3-ubyte.gz,train-labels-idx1-ubyte.gz,t10k-images-idx3-ubyte.gz,t10k-labels-idx1-ubyte.gz}
+$ gunzip data/fashion_mnist/*.gz
+```
+
 Start the training(smallNORB):
 ```
 $ python3 train.py "smallNORB"

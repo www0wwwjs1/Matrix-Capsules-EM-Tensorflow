@@ -9,7 +9,7 @@ flags.DEFINE_float('ac_lambda0', 0.01, '\lambda in the activation function a_c, 
 flags.DEFINE_float('ac_lambda_step', 0.01,
                    'It is described that \lambda increases at each iteration with a fixed schedule, however specific super parameters is absent.')
 
-flags.DEFINE_integer('batch_size', 50, 'batch size')
+flags.DEFINE_integer('batch_size', 9, 'batch size')
 flags.DEFINE_integer('epoch', 50, 'epoch')
 flags.DEFINE_integer('iter_routing', 1, 'number of iterations')
 flags.DEFINE_float('m_schedule', 0.2, 'the m will get to 0.9 at current epoch')
@@ -26,7 +26,7 @@ flags.DEFINE_integer('D', 16, 'number of channels in output from ConvCaps2')
 ############################
 #   environment setting    #
 ############################
-flags.DEFINE_string('dataset', 'data/mnist', 'the path for dataset')
+flags.DEFINE_string('dataset', 'data/fashion_mnist', 'the path for dataset')
 flags.DEFINE_boolean('is_train', True, 'train or predict phase')
 flags.DEFINE_integer('num_threads', 8, 'number of threads of enqueueing exampls')
 flags.DEFINE_string('logdir', 'logdir', 'logs directory')
