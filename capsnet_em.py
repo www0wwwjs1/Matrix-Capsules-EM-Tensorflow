@@ -13,8 +13,15 @@ import numpy as np
 def cross_ent_loss(output, x, y):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=output)
     loss = tf.reduce_mean(loss)
-
+    num_class = int(output.get_shape()[-1])
     data_size = int(x.get_shape()[1])
+
+    # reconstruction loss
+    y = tf.one_hot(y, num_class, dtype=tf.float32)
+    y = tf.expand_dims(y, axis=2)
+    output = tf.expand_dims(output, axis=2)
+    output = tf.reshape(tf.multiply(output, y), shape=[cfg.batch_size, -1])
+    tf.logging.info("decoder input value dimension:{}".format(output.get_shape()))
 
     with tf.variable_scope('decoder'):
         output = slim.fully_connected(output, 512, trainable=True)
@@ -30,7 +37,7 @@ def cross_ent_loss(output, x, y):
     # loss+0.0005*reconstruction_loss+regularization#
     loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
 
-    return loss_all, output
+    return loss_all, reconstruction_loss, output
 
 
 def spread_loss(output, pose_out, x, y, m):

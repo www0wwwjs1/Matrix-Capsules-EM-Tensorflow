@@ -21,9 +21,9 @@ logger = daiquiri.getLogger(__name__)
 
 def main(args):
     """Get dataset hyperparameters."""
-    assert len(args) == 2 and isinstance(args[1], str)
+    assert len(args) == 3 and isinstance(args[1], str) and isinstance(args[2], str)
     dataset_name = args[1]
-    model_name = "caps"
+    model_name = args[2]
 
     """Set reproduciable random seed"""
     tf.set_random_seed(1234)

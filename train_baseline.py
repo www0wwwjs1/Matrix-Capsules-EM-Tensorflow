@@ -59,9 +59,10 @@ def main(args):
                 batch_x = slim.batch_norm(batch_x, center=False, is_training=True, trainable=True)
                 output = net.build_arch_baseline(batch_x, is_train=True,
                                                  num_classes=num_classes)
-                loss, _ = net.cross_ent_loss(output, batch_x_squash, batch_labels)
+                loss, recon_loss, _ = net.cross_ent_loss(output, batch_x_squash, batch_labels)
                 acc = net.test_accuracy(output, batch_labels)
                 tf.summary.scalar('train_acc', acc)
+                tf.summary.scalar('recon_loss', recon_loss)
                 tf.summary.scalar('all_loss', loss)
 
             """Compute gradient."""
