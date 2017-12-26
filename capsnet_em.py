@@ -42,7 +42,8 @@ def spread_loss(output, pose_out, x, y, m):
     loss = tf.reduce_mean(loss)
 
     # reconstruction loss
-    pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
+    pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
+    tf.logging.info("decoder input value dimension:{}".format(pose_out.get_shape()))
 
     with tf.variable_scope('decoder'):
         pose_out = slim.fully_connected(pose_out, 512, trainable=True)
