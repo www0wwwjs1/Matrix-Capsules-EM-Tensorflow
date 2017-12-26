@@ -25,13 +25,14 @@ def main(args):
     assert len(args) == 2 and isinstance(args[1], str)
     dataset_name = args[1]
     logger.info('Using dataset: {}'.format(dataset_name))
+
+    """Set reproduciable random seed"""
+    tf.set_random_seed(1234)
+
     coord_add = get_coord_add(dataset_name)
     dataset_size = get_dataset_size_train(dataset_name)
     num_classes = get_num_classes(dataset_name)
     create_inputs = get_create_inputs(dataset_name, is_train=True, epochs=cfg.epoch)
-
-    """Set reproduciable random seed"""
-    tf.set_random_seed(1234)
 
     with tf.Graph().as_default(), tf.device('/cpu:0'):
         """Get global_step."""
@@ -149,9 +150,6 @@ def main(args):
                     ckpt_path = os.path.join(
                         cfg.logdir + '/caps/{}/'.format(dataset_name), 'model-{:.4f}.ckpt'.format(loss_value))
                     saver.save(sess, ckpt_path, global_step=step)
-
-        """Join threads"""
-        coord.join(threads)
 
 
 if __name__ == "__main__":

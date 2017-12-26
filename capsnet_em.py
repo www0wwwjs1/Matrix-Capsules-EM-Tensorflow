@@ -246,7 +246,7 @@ def build_arch(input, coord_add, is_train: bool, num_classes: int):
                 tf.logging.info(
                     'class cap activation shape: {}'.format(activation.get_shape()))
                 tf.summary.histogram(name="class_cap_routing_hist",
-                                     values=test2, family="Experiment")
+                                     values=test2)
 
             output = tf.reshape(activation, shape=[
                                 cfg.batch_size, data_size, data_size, num_classes])
