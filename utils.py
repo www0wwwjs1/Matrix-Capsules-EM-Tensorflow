@@ -72,8 +72,8 @@ def load_mnist(path, is_training):
     teY = loaded[8:].reshape((10000)).astype(np.int32)
 
     # normalization and convert to a tensor [60000, 28, 28, 1]
-    trX = tf.convert_to_tensor(trX / 255., tf.float32)
-    teX = tf.convert_to_tensor(teX / 255., tf.float32)
+    trX = tf.convert_to_tensor(trX, tf.float32)
+    teX = tf.convert_to_tensor(teX, tf.float32)
 
     # => [num_samples, 10]
     # trY = tf.one_hot(trY, depth=10, axis=1, dtype=tf.float32)
