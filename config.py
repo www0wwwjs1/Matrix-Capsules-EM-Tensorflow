@@ -11,10 +11,13 @@ flags.DEFINE_float('ac_lambda_step', 0.01,
 
 flags.DEFINE_integer('batch_size', 50, 'batch size')
 flags.DEFINE_integer('epoch', 50, 'epoch')
-flags.DEFINE_integer('iter_routing', 1, 'number of iterations')
+flags.DEFINE_integer('iter_routing', 1, 'number of iterations minus 1')
 flags.DEFINE_float('m_schedule', 0.2, 'the m will get to 0.9 at current epoch')
 flags.DEFINE_float('epsilon', 1e-9, 'epsilon')
-
+flags.DEFINE_float('m_plus', 0.9, 'the parameter of m plus')
+flags.DEFINE_float('m_minus', 0.1, 'the parameter of m minus')
+flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
+flags.DEFINE_boolean('weight_reg', True, 'train with regularization of weights')
 ################################
 #    structure parameters      #
 ################################

@@ -112,8 +112,8 @@ def main(args):
 
                     step += 1
                     # display original/reconstructed images in matplotlib
-                    plot_imgs(orig_image)
-                    plot_imgs(recon_image)
+                    plot_imgs(orig_image, i, 'ori')
+                    plot_imgs(recon_image, i, 'rec')
 
                 ave_acc = accuracy_sum / num_batches_test
                 print('the average accuracy is %f' % ave_acc)

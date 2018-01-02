@@ -16,19 +16,25 @@ from numpy.random import RandomState
 prng = RandomState(1234567890)
 
 from matplotlib import pyplot as plt
+import cv2
 
 
-def plot_imgs(inputs):
+def plot_imgs(inputs, num, label):
     """Plot smallNORB images helper"""
-    fig = plt.figure()
-    plt.title('Show images')
-    r = np.floor(np.sqrt(len(inputs))).astype(int)
-    for i in range(r**2):
+    # fig = plt.figure()
+    # plt.title('Show images')
+    # r = np.floor(np.sqrt(len(inputs))).astype(int)
+    # for i in range(r**2):
+    #     size = inputs[i].shape[1]
+    #     sample = inputs[i].flatten().reshape(size, size)
+    #     a = fig.add_subplot(r, r, i + 1)
+    #     a.imshow(sample, cmap='gray')
+    # plt.show()
+    inputs = (inputs*255.).astype(np.uint8)
+    for i in range(len(inputs)):
         size = inputs[i].shape[1]
-        sample = inputs[i].flatten().reshape(size, size)
-        a = fig.add_subplot(r, r, i + 1)
-        a.imshow(sample, cmap='gray')
-    plt.show()
+        cv2.imwrite('%d' % num+'_%d' % i+label+'.jpg', inputs[i].flatten().reshape(size, size))
+    return
 
 
 def write_data_to_tfrecord(kind: str, chunkify=False):
