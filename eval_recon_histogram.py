@@ -93,7 +93,7 @@ def main(args):
             files = os.listdir(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name))
             for epoch in range(cfg.epoch - 1, cfg.epoch):
                 # requires a regex to adapt the loss value in the file name here
-                ckpt_re = ".ckpt-0"  # ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
+                ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
                 for __file in files:
                     if __file.endswith(ckpt_re + ".index"):
                         ckpt = os.path.join(
