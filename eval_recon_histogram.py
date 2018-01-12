@@ -42,17 +42,27 @@ def main(args):
         batch_x, batch_labels = create_inputs()
         batch_squash = tf.divide(batch_x, 255.)
         batch_x_norm = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
-        output, pose_out = net.build_arch(batch_x_norm, coord_add,
-                                          is_train=False, num_classes=num_classes)
-        tf.logging.debug(pose_out.get_shape())
+        if model_name == "cnn_baseline":
+            output = net.build_arch_baseline(batch_x, is_train=True,
+                                             num_classes=num_classes)
+
+            loss, mse, recon_img_squash = net.cross_ent_loss(
+                output, batch_squash, batch_labels)
+
+        else:  # model_name == "caps"
+            output, pose_out = net.build_arch(batch_x_norm, coord_add,
+                                              is_train=False, num_classes=num_classes)
+            tf.logging.debug(pose_out.get_shape())
+
+            m_op = tf.constant(0.9)
+            loss, spread_loss, mse, recon_img_squash = net.spread_loss(
+                output, pose_out, batch_squash, batch_labels, m_op)
+            tf.summary.scalar('spread_loss', spread_loss)
 
         batch_acc = net.test_accuracy(output, batch_labels)
-        m_op = tf.constant(0.9)
-        loss, spread_loss, mse, recon_img_squash = net.spread_loss(
-            output, pose_out, batch_squash, batch_labels, m_op)
-        tf.summary.scalar('spread_loss', spread_loss)
         tf.summary.scalar('reconstruction_loss', mse)
         tf.summary.scalar('all_loss', loss)
+
         data_size = int(batch_x.get_shape()[1])
         recon_img = tf.multiply(tf.reshape(recon_img_squash, shape=[
                                 cfg.batch_size, data_size, data_size, 1]), 255.)
@@ -60,6 +70,7 @@ def main(args):
             cfg.batch_size, data_size, data_size, 1])
         tf.summary.image('orig_image', orig_img)
         tf.summary.image('recon_image', recon_img)
+
         saver = tf.train.Saver()
 
         step = 0
