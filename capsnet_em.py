@@ -35,8 +35,7 @@ def cross_ent_loss(output, x, y):
     # regularization loss
     regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
     # loss+0.0005*reconstruction_loss+regularization#
-    loss_all = tf.add_n([loss] + [0.005 * data_size * data_size *
-                                  reconstruction_loss] + regularization)
+    loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
 
     return loss_all, reconstruction_loss, output
 
@@ -64,7 +63,8 @@ def spread_loss(output, pose_out, x, y, m):
     loss = tf.reduce_mean(loss)
 
     # reconstruction loss
-    pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
+    pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
+    # pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
     tf.logging.info("decoder input value dimension:{}".format(pose_out.get_shape()))
 
     with tf.variable_scope('decoder'):
@@ -76,11 +76,13 @@ def spread_loss(output, pose_out, x, y, m):
         x = tf.reshape(x, shape=[cfg.batch_size, -1])
         reconstruction_loss = tf.reduce_mean(tf.square(pose_out - x))
 
-    # regularization loss
-    regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
-    # loss+0.0005*reconstruction_loss+regularization#
-    loss_all = tf.add_n([loss] + [0.005 * data_size * data_size *
-                                  reconstruction_loss] + regularization)
+    if cfg.weight_reg:
+        # regularization loss
+        regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
+        # loss+0.0005*reconstruction_loss+regularization#
+        loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
+    else:
+        loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss])
 
     return loss_all, loss, reconstruction_loss, pose_out
 
