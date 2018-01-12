@@ -8,7 +8,7 @@ import tensorflow as tf
 from config import cfg, get_coord_add, get_dataset_size_train, get_dataset_size_test, get_num_classes, get_create_inputs
 import time
 import os
-import capsnet_em as net
+import capsnet_dynamic_routing as net
 import tensorflow.contrib.slim as slim
 from data.smallNORB import plot_imgs
 
@@ -41,16 +41,16 @@ def main(args):
 
         batch_x, batch_labels = create_inputs()
         batch_squash = tf.divide(batch_x, 255.)
-        batch_x_norm = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
-        output, pose_out = net.build_arch(batch_x_norm, coord_add,
-                                          is_train=False, num_classes=num_classes)
+        # batch_x_norm = slim.batch_norm(batch_x, center=False, is_training=False, trainable=False)
+        pose_out, output = net.build_arch(batch_squash, is_train=False, num_classes=num_classes)
+        # output, pose_out = net.build_arch(batch_x_norm, coord_add, is_train=False, num_classes=num_classes)
         tf.logging.debug(pose_out.get_shape())
 
         batch_acc = net.test_accuracy(output, batch_labels)
-        m_op = tf.constant(0.9)
-        loss, spread_loss, mse, recon_img_squash = net.spread_loss(
-            output, pose_out, batch_squash, batch_labels, m_op)
-        tf.summary.scalar('spread_loss', spread_loss)
+        # m_op = tf.constant(0.9)
+        loss, margin_loss, mse, recon_img_squash = net.loss(
+            pose_out, output, batch_squash, batch_labels)
+        tf.summary.scalar('spread_loss', margin_loss)
         tf.summary.scalar('reconstruction_loss', mse)
         tf.summary.scalar('all_loss', loss)
         data_size = int(batch_x.get_shape()[1])
@@ -80,7 +80,7 @@ def main(args):
                 cfg.test_logdir + '/{}/{}/'.format(model_name, dataset_name), graph=sess.graph)  # graph=sess.graph, huge!
 
             files = os.listdir(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name))
-            for epoch in range(14, 15):
+            for epoch in range(5, 6):
                 # requires a regex to adapt the loss value in the file name here
                 ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
                 for __file in files:

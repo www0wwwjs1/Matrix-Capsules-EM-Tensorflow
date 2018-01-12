@@ -50,8 +50,8 @@ def main(args):
         with tf.device('/gpu:0'):
             with slim.arg_scope([slim.variable], device='/cpu:0'):
                 batch_squash = tf.divide(batch_x, 255.)
-                batch_x = slim.batch_norm(batch_x, center=False, is_training=True, trainable=True)
-                output, output_len = net.build_arch(batch_x, is_train=True, num_classes=num_classes)
+                # batch_x = slim.batch_norm(batch_x, center=False, is_training=True, trainable=True)
+                output, output_len = net.build_arch(batch_squash, is_train=True, num_classes=num_classes)
                 tf.logging.debug(output.get_shape())
                 loss, margin_loss, mse, _ = net.loss(
                     output, output_len, batch_squash, batch_labels)
@@ -114,6 +114,7 @@ def main(args):
             try:
                 _, loss_value, summary_str = sess.run(
                     [train_op, loss, summary_op])
+
                 logger.info('%d iteration finishs in ' % step + '%f second' %
                             (time.time() - tic) + ' loss=%f' % loss_value)
             except KeyboardInterrupt:

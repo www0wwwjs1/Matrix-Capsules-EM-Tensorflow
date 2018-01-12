@@ -30,7 +30,7 @@ def plot_imgs(inputs, num, label):
     #     a = fig.add_subplot(r, r, i + 1)
     #     a.imshow(sample, cmap='gray')
     # plt.show()
-    inputs = (inputs*255.).astype(np.uint8)
+    inputs = (inputs).astype(np.uint8)
     for i in range(len(inputs)):
         size = inputs[i].shape[1]
         cv2.imwrite('%d' % num+'_%d' % i+label+'.jpg', inputs[i].flatten().reshape(size, size))

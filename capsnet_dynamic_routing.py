@@ -10,14 +10,13 @@ from config import cfg
 import numpy as np
 
 # input should be a tensor with size as [batch_size, caps_num_in, channel_num_in]
-def vec_transform(input, caps_num_out, channel_num_out, regularizer):
+def vec_transform(input, caps_num_out, channel_num_out):
     batch_size = int(input.get_shape()[0])
     caps_num_in = int(input.get_shape()[1])
     channel_num_in = int(input.get_shape()[-1])
 
     w = slim.variable('w', shape=[1, caps_num_out, caps_num_in, channel_num_in, channel_num_out], dtype=tf.float32,
-                      initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
-                      regularizer=regularizer)
+                      initializer=tf.random_normal_initializer(mean=0.0, stddev=0.01)) #
 
     w = tf.tile(w, [batch_size, 1, 1, 1, 1])
     output = tf.reshape(input, shape=[batch_size, 1, caps_num_in, 1, channel_num_in])
@@ -30,7 +29,7 @@ def vec_transform(input, caps_num_out, channel_num_out, regularizer):
 # input should be a tensor with size as [batch_size, caps_num_out, channel_num]
 def squash(input):
     norm_2 = tf.reduce_sum(tf.square(input), axis=-1, keep_dims=True)
-    output = tf.sqrt(norm_2+cfg.epsilon)/(1+norm_2)*input
+    output = norm_2/(tf.sqrt(norm_2+cfg.epsilon)*(1+norm_2))*input
 
     return output
 
@@ -40,23 +39,29 @@ def dynamic_routing(input):
     caps_num_in = int(input.get_shape()[2])
     caps_num_out = int(input.get_shape()[1])
 
+    input_stopped = tf.stop_gradient(input, name='stop_gradient')
+
     b = tf.constant(np.zeros([batch_size, caps_num_out, caps_num_in, 1], dtype=np.float32))
 
     for r_iter in range(cfg.iter_routing+1):
         c = tf.nn.softmax(b, dim=1)
-        s = tf.matmul(input, c, transpose_a=True)
-        v = squash(tf.squeeze(s))
-        b = b+tf.reduce_sum(tf.reshape(v, shape=[batch_size, caps_num_out, 1, -1])*input, axis=-1, keep_dims=True)
+        if r_iter == cfg.iter_routing:
+            s = tf.matmul(input, c, transpose_a=True)
+            v = squash(tf.squeeze(s))
+        elif r_iter < cfg.iter_routing:
+            s = tf.matmul(input_stopped, c, transpose_a=True)
+            v = squash(tf.squeeze(s))
+            b = b+tf.reduce_sum(tf.reshape(v, shape=[batch_size, caps_num_out, 1, -1])*input_stopped, axis=-1, keep_dims=True)
 
     return v
 
 def build_arch(input, is_train, num_classes):
     data_size = int(input.get_shape()[1])
-    initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-    bias_initializer = tf.constant_initializer(0.0)
-    weights_regularizer = tf.contrib.layers.l2_regularizer(5e-04)
+    # initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
+    # bias_initializer = tf.constant_initializer(0.0)
+    # weights_regularizer = tf.contrib.layers.l2_regularizer(5e-04)
 
-    with slim.arg_scope([slim.conv2d], trainable=is_train, biases_initializer=bias_initializer, weights_initializer=initializer, weights_regularizer=weights_regularizer):
+    with slim.arg_scope([slim.conv2d], trainable=is_train):#, activation_fn=None, , , biases_initializer=bias_initializer, weights_regularizer=weights_regularizer
         with tf.variable_scope('conv1') as scope:
             output = slim.conv2d(input, num_outputs=256, kernel_size=[9, 9], stride=1, padding='VALID', scope=scope)
             data_size = data_size-8
@@ -64,15 +69,16 @@ def build_arch(input, is_train, num_classes):
             tf.logging.info('conv1 output shape: {}'.format(output.get_shape()))
 
         with tf.variable_scope('primary_caps_layer') as scope:
-            output = slim.conv2d(output, num_outputs=32*8, kernel_size=[9, 9], stride=2, padding='VALID', scope=scope, activation_fn=None)
+            output = slim.conv2d(output, num_outputs=32*8, kernel_size=[9, 9], stride=2, padding='VALID', scope=scope)#, activation_fn=None
             output = tf.reshape(output, [cfg.batch_size, -1, 8])
+            output = squash(output)
             data_size = int(np.floor((data_size-8)/2))
             assert output.get_shape() == [cfg.batch_size, data_size*data_size*32, 8]
             tf.logging.info('primary capsule output shape: {}'.format(output.get_shape()))
 
         with tf.variable_scope('digit_caps_layer') as scope:
             with tf.variable_scope('u') as scope:
-                u_hats = vec_transform(output, num_classes, 16, weights_regularizer)
+                u_hats = vec_transform(output, num_classes, 16)
                 assert u_hats.get_shape() == [cfg.batch_size, num_classes, data_size*data_size*32, 16]
                 tf.logging.info('digit_caps_layer u_hats shape: {}'.format(u_hats.get_shape()))
 
@@ -99,12 +105,15 @@ def loss(output, output_len, x, y):
 
     # reconstruction loss
     y = tf.expand_dims(y, axis=2)
-    output = tf.squeeze(tf.matmul(output, y, transpose_a=True))
+    # output = tf.squeeze(tf.matmul(output, y, transpose_a=True))
+    output = tf.reshape(output*y, shape=[cfg.batch_size, -1])
+    # test = output
 
     with tf.variable_scope('decoder'):
         output = slim.fully_connected(output, 512, trainable=True)
         output = slim.fully_connected(output, 1024, trainable=True)
-        output = slim.fully_connected(output, data_size*data_size, trainable=True, activation_fn=tf.sigmoid)
+        output = slim.fully_connected(output, data_size * data_size,
+                                        trainable=True, activation_fn=tf.sigmoid)
 
         x = tf.reshape(x, shape=[cfg.batch_size, -1])
         reconstruction_loss = tf.reduce_mean(tf.square(output-x))
@@ -113,9 +122,9 @@ def loss(output, output_len, x, y):
         # regularization loss
         regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         # loss+0.0005*reconstruction_loss+regularization#
-        loss_all = tf.add_n([margin_loss] + [0.0005 * reconstruction_loss] + regularization)
+        loss_all = tf.add_n([margin_loss] + [0.0005 * data_size * data_size * reconstruction_loss] + regularization)
     else:
-        loss_all = tf.add_n([margin_loss] + [0.0005 * reconstruction_loss])
+        loss_all = margin_loss+0.0005*data_size*data_size*reconstruction_loss
 
     return loss_all, margin_loss, reconstruction_loss, output
 
