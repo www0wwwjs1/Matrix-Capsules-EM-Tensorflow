@@ -3,3 +3,5 @@ numpy
 daiquiri
 profilehooks
 matplotlib
+scipy
+opencv-python
