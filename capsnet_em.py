@@ -63,15 +63,15 @@ def spread_loss(output, pose_out, x, y, m):
     loss = tf.reduce_mean(loss)
 
     # reconstruction loss
-    pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
-    # pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
+    # pose_out = tf.reshape(tf.matmul(pose_out, y, transpose_a=True), shape=[cfg.batch_size, -1])
+    pose_out = tf.reshape(tf.multiply(pose_out, y), shape=[cfg.batch_size, -1])
     tf.logging.info("decoder input value dimension:{}".format(pose_out.get_shape()))
 
     with tf.variable_scope('decoder'):
-        pose_out = slim.fully_connected(pose_out, 512, trainable=True)
-        pose_out = slim.fully_connected(pose_out, 1024, trainable=True)
+        pose_out = slim.fully_connected(pose_out, 512, trainable=True, weights_regularizer=tf.contrib.layers.l2_regularizer(5e-04))
+        pose_out = slim.fully_connected(pose_out, 1024, trainable=True, weights_regularizer=tf.contrib.layers.l2_regularizer(5e-04))
         pose_out = slim.fully_connected(pose_out, data_size * data_size,
-                                        trainable=True, activation_fn=tf.sigmoid)
+                                        trainable=True, activation_fn=tf.sigmoid, weights_regularizer=tf.contrib.layers.l2_regularizer(5e-04))
 
         x = tf.reshape(x, shape=[cfg.batch_size, -1])
         reconstruction_loss = tf.reduce_mean(tf.square(pose_out - x))
@@ -80,9 +80,9 @@ def spread_loss(output, pose_out, x, y, m):
         # regularization loss
         regularization = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         # loss+0.0005*reconstruction_loss+regularization#
-        loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss] + regularization)
+        loss_all = tf.add_n([loss] + [0.0005 * data_size* data_size * reconstruction_loss] + regularization)
     else:
-        loss_all = tf.add_n([loss] + [0.0005 * reconstruction_loss])
+        loss_all = tf.add_n([loss] + [0.0005 * data_size* data_size * reconstruction_loss])
 
     return loss_all, loss, reconstruction_loss, pose_out
 
@@ -304,70 +304,63 @@ def em_routing(votes, activation, caps_num_c, regularizer, tag=False):
     caps_num_i = int(activation.get_shape()[1])
     n_channels = int(votes.get_shape()[-1])
 
-    # m-step
-    r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / caps_num_c)
-    r = r * activation
-
-    # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
-    r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)
-    r1 = tf.reshape(r / (r_sum + cfg.epsilon),
-                    shape=[batch_size, caps_num_i, caps_num_c, 1])
-
-    miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
-    sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1,
-                                 axis=1, keep_dims=True) + cfg.epsilon
-
+    sigma_square = []
+    miu = []
+    activation_out = []
     beta_v = slim.variable('beta_v', shape=[caps_num_c, n_channels], dtype=tf.float32,
-                           initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
+                           initializer=tf.constant_initializer(0.0),#tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
                            regularizer=regularizer)
-    r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
-    cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square,
-                                                 shape=[batch_size, caps_num_c, n_channels])))) * r_sum
-
     beta_a = slim.variable('beta_a', shape=[caps_num_c], dtype=tf.float32,
-                           initializer=tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
+                           initializer=tf.constant_initializer(0.0),#tf.truncated_normal_initializer(mean=0.0, stddev=0.01),
                            regularizer=regularizer)
-    activation1 = tf.nn.sigmoid(cfg.ac_lambda0 * (beta_a - tf.reduce_sum(cost_h, axis=2)))
 
-    test.append(miu)
+    # votes_in = tf.stop_gradient(votes, name='stop_gradient_votes')
+    # activation_in = tf.stop_gradient(activation, name='stop_gradient_activation')
+    votes_in = votes
+    activation_in = activation
 
     for iters in range(cfg.iter_routing):
+        # if iters == cfg.iter_routing-1:
 
         # e-step
+        if iters == 0:
+            r = tf.constant(np.ones([batch_size, caps_num_i, caps_num_c], dtype=np.float32) / caps_num_c)
+        else:
+            # Contributor: Yunzhi Shi
+            # log and exp here provide higher numerical stability especially for bigger number of iterations
+            log_p_c_h = -tf.log(tf.sqrt(sigma_square)) - \
+                        (tf.square(votes_in - miu) / (2 * sigma_square))
+            log_p_c_h = log_p_c_h - \
+                        (tf.reduce_max(log_p_c_h, axis=[2, 3], keep_dims=True) - tf.log(10.0))
+            p_c = tf.exp(tf.reduce_sum(log_p_c_h, axis=3))
 
-        # Contributor: Yunzhi Shi
-        # log and exp here provide higher numerical stability especially for bigger number of iterations
-        log_p_c_h = -tf.log(tf.sqrt(sigma_square)) - \
-            (tf.square(votes - miu) / (2 * sigma_square))
-        log_p_c_h = log_p_c_h - \
-            (tf.reduce_max(log_p_c_h, axis=[2, 3], keep_dims=True) - tf.log(10.0))
-        p_c = tf.exp(tf.reduce_sum(log_p_c_h, axis=3))
+            ap = p_c * tf.reshape(activation_out, shape=[batch_size, 1, caps_num_c])
 
-        a1 = tf.reshape(activation1, shape=[batch_size, 1, caps_num_c])
-        ap = p_c * a1
+            # ap = tf.reshape(activation_out, shape=[batch_size, 1, caps_num_c])
 
-        sum_ap = tf.reduce_sum(ap, axis=2, keep_dims=True)
-        r = ap / (sum_ap + cfg.epsilon)
+            r = ap / (tf.reduce_sum(ap, axis=2, keep_dims=True) + cfg.epsilon)
 
         # m-step
-        r = r * activation
+        r = r * activation_in
+        r = r / (tf.reduce_sum(r, axis=2, keep_dims=True)+cfg.epsilon)
 
-        r_sum = tf.reduce_sum(r, axis=1,
-                              keep_dims=True)  # tf.reshape(tf.reduce_sum(r, axis=1), shape=[batch_size, 1, caps_num_c])
+        r_sum = tf.reduce_sum(r, axis=1, keep_dims=True)
         r1 = tf.reshape(r / (r_sum + cfg.epsilon),
                         shape=[batch_size, caps_num_i, caps_num_c, 1])
 
-        miu = tf.reduce_sum(votes * r1, axis=1, keep_dims=True)
-        sigma_square = tf.reduce_sum(tf.square(votes - miu) * r1,
+        miu = tf.reduce_sum(votes_in * r1, axis=1, keep_dims=True)
+        sigma_square = tf.reduce_sum(tf.square(votes_in - miu) * r1,
                                      axis=1, keep_dims=True) + cfg.epsilon
 
-        r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
-        cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square,
-                                                     shape=[batch_size, caps_num_c, n_channels])))) * r_sum
+        if iters == cfg.iter_routing-1:
+            r_sum = tf.reshape(r_sum, [batch_size, caps_num_c, 1])
+            cost_h = (beta_v + tf.log(tf.sqrt(tf.reshape(sigma_square,
+                                                         shape=[batch_size, caps_num_c, n_channels])))) * r_sum
 
-        activation1 = tf.nn.sigmoid(
-            (cfg.ac_lambda0 + (iters + 1) * cfg.ac_lambda_step) * (beta_a - tf.reduce_sum(cost_h, axis=2)))
+            activation_out = tf.nn.softmax(cfg.ac_lambda0 * (beta_a - tf.reduce_sum(cost_h, axis=2)))
+        else:
+            activation_out = tf.nn.softmax(r_sum)
+        # if iters <= cfg.iter_routing-1:
+        #     activation_out = tf.stop_gradient(activation_out, name='stop_gradient_activation')
 
-        test.append(miu)
-
-    return miu, activation1, test
+    return miu, activation_out, test

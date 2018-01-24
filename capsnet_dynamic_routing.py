@@ -30,7 +30,7 @@ def vec_transform(input, caps_num_out, channel_num_out):
 def squash(input):
     norm_2 = tf.reduce_sum(tf.square(input), axis=-1, keep_dims=True)
     output = norm_2/(tf.sqrt(norm_2+cfg.epsilon)*(1+norm_2))*input
-
+    # output = tf.sqrt(norm_2+cfg.epsilon)/(1+norm_2)*input
     return output
 
 # input should be a tensor with size as [batch_size, caps_num_out, caps_num_in, channel_num]
@@ -43,7 +43,7 @@ def dynamic_routing(input):
 
     b = tf.constant(np.zeros([batch_size, caps_num_out, caps_num_in, 1], dtype=np.float32))
 
-    for r_iter in range(cfg.iter_routing+1):
+    for r_iter in range(cfg.iter_routing):
         c = tf.nn.softmax(b, dim=1)
         if r_iter == cfg.iter_routing:
             s = tf.matmul(input, c, transpose_a=True)
@@ -57,11 +57,11 @@ def dynamic_routing(input):
 
 def build_arch(input, is_train, num_classes):
     data_size = int(input.get_shape()[1])
-    # initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
-    # bias_initializer = tf.constant_initializer(0.0)
+    initializer = tf.truncated_normal_initializer(mean=0.0, stddev=0.01)
+    bias_initializer = tf.constant_initializer(0.0)
     # weights_regularizer = tf.contrib.layers.l2_regularizer(5e-04)
 
-    with slim.arg_scope([slim.conv2d], trainable=is_train):#, activation_fn=None, , , biases_initializer=bias_initializer, weights_regularizer=weights_regularizer
+    with slim.arg_scope([slim.conv2d], trainable=is_train, biases_initializer=bias_initializer, weights_initializer=initializer):#, activation_fn=None, , , , weights_regularizer=weights_regularizer
         with tf.variable_scope('conv1') as scope:
             output = slim.conv2d(input, num_outputs=256, kernel_size=[9, 9], stride=1, padding='VALID', scope=scope)
             data_size = data_size-8
