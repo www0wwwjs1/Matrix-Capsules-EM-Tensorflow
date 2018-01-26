@@ -45,10 +45,10 @@ def dynamic_routing(input):
 
     for r_iter in range(cfg.iter_routing):
         c = tf.nn.softmax(b, dim=1)
-        if r_iter == cfg.iter_routing:
+        if r_iter == cfg.iter_routing-1:
             s = tf.matmul(input, c, transpose_a=True)
             v = squash(tf.squeeze(s))
-        elif r_iter < cfg.iter_routing:
+        else:
             s = tf.matmul(input_stopped, c, transpose_a=True)
             v = squash(tf.squeeze(s))
             b = b+tf.reduce_sum(tf.reshape(v, shape=[batch_size, caps_num_out, 1, -1])*input_stopped, axis=-1, keep_dims=True)
