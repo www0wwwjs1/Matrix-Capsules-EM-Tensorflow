@@ -9,7 +9,6 @@ import tensorflow.contrib.slim as slim
 from config import cfg
 import numpy as np
 
-
 def cross_ent_loss(output, x, y):
     loss = tf.losses.sparse_softmax_cross_entropy(labels=y, logits=output)
     loss = tf.reduce_mean(loss)
@@ -110,8 +109,6 @@ def kernel_tile(input, kernel, stride):
     return output
 
 # input should be a tensor with size as [batch_size, caps_num_i, 16]
-
-
 def mat_transform(input, caps_num_c, regularizer, tag=False):
     batch_size = int(input.get_shape()[0])
     caps_num_i = int(input.get_shape()[1])

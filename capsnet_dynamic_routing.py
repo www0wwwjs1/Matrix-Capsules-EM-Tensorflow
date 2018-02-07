@@ -51,7 +51,7 @@ def dynamic_routing(input):
         else:
             s = tf.matmul(input_stopped, c, transpose_a=True)
             v = squash(tf.squeeze(s))
-            b = b+tf.reduce_sum(tf.reshape(v, shape=[batch_size, caps_num_out, 1, -1])*input_stopped, axis=-1, keep_dims=True)
+            b += tf.reduce_sum(tf.reshape(v, shape=[batch_size, caps_num_out, 1, -1])*input_stopped, axis=-1, keep_dims=True)
 
     return v
 

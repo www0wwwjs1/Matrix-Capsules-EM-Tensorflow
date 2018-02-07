@@ -18,6 +18,7 @@ flags.DEFINE_float('m_plus', 0.9, 'the parameter of m plus')
 flags.DEFINE_float('m_minus', 0.1, 'the parameter of m minus')
 flags.DEFINE_float('lambda_val', 0.5, 'down weight of the loss for absent digit classes')
 flags.DEFINE_boolean('weight_reg', False, 'train with regularization of weights')
+flags.DEFINE_string('norm', 'norm2', 'norm type')
 ################################
 #    structure parameters      #
 ################################
