@@ -3,3 +3,4 @@ numpy
 daiquiri
 profilehooks
 matplotlib
+keras

@@ -45,6 +45,7 @@ Any questions and comments to the code and the original algorithms are welcomed!
 - Python >= 3.4
 - Numpy
 - Tensorflow >= 1.2.0
+- Keras
 
 ```pip install -r requirement.txt```
 

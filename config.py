@@ -42,6 +42,7 @@ cfg = tf.app.flags.FLAGS
 
 def get_coord_add(dataset_name: str):
     import numpy as np
+    # TODO: get coord add for cifar10/100 datasets (32x32x3)
     options = {'mnist': ([[[8., 8.], [12., 8.], [16., 8.]],
                           [[8., 12.], [12., 12.], [16., 12.]],
                           [[8., 16.], [12., 16.], [16., 16.]]], 28.),
@@ -58,25 +59,29 @@ def get_coord_add(dataset_name: str):
 
 
 def get_dataset_size_train(dataset_name: str):
-    options = {'mnist': 55000, 'smallNORB': 23400 * 2, 'fashion_mnist': 55000}
+    options = {'mnist': 55000, 'smallNORB': 23400 * 2,
+               'fashion_mnist': 55000, 'cifar10': 50000, 'cifar100': 50000}
     return options[dataset_name]
 
 
 def get_dataset_size_test(dataset_name: str):
-    options = {'mnist': 10000, 'smallNORB': 23400 * 2, 'fashion_mnist': 10000,}
+    options = {'mnist': 10000, 'smallNORB': 23400 * 2,
+               'fashion_mnist': 10000, 'cifar10': 10000, 'cifar10': 10000}
     return options[dataset_name]
 
 
 def get_num_classes(dataset_name: str):
-    options = {'mnist': 10, 'smallNORB': 5, 'fashion_mnist': 10}
+    options = {'mnist': 10, 'smallNORB': 5, 'fashion_mnist': 10, 'cifar10': 10, 'cifar100': 100}
     return options[dataset_name]
 
 
-from utils import create_inputs_mnist, create_inputs_norb
+from utils import create_inputs_mnist, create_inputs_norb, create_inputs_cifar10, create_inputs_cifar100
 
 
 def get_create_inputs(dataset_name: str, is_train: bool, epochs: int):
     options = {'mnist': lambda: create_inputs_mnist(is_train),
                'fashion_mnist': lambda: create_inputs_mnist(is_train),
-               'smallNORB': lambda: create_inputs_norb(is_train, epochs)}
+               'smallNORB': lambda: create_inputs_norb(is_train, epochs),
+               'cifar10': lambda: create_inputs_cifar10(is_train),
+               'cifa100': lambda: create_inputs_cifa100(is_train)}
     return options[dataset_name]
