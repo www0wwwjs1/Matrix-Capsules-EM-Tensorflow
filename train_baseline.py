@@ -139,7 +139,8 @@ def main(args):
                         cfg.logdir + '/cnn_baseline/{}'.format(dataset_name), 'model-{:.4f}.ckpt'.format(loss_value))
                     saver.save(sess, ckpt_path, global_step=step)
 
-        """Join threads"""
+        """Stop queue runners"""
+        coord.request_stop()
         coord.join(threads)
 
 
