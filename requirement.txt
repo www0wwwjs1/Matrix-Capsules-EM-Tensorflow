@@ -1,6 +1,7 @@
 argh
 numpy
 daiquiri
+opencv-python
 profilehooks
 matplotlib
 keras
