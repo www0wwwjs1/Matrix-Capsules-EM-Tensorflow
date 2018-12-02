@@ -71,11 +71,16 @@ def main(args):
             files = os.listdir(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name))
             for epoch in range(1, cfg.epoch):
                 # requires a regex to adapt the loss value in the file name here
-                ckpt_re = ".ckpt-%d" % (num_batches_per_epoch_train * epoch)
+                ckpt_suffix= ".ckpt-%d.index" % (num_batches_per_epoch_train * epoch)
                 for __file in files:
-                    if __file.endswith(ckpt_re + ".index"):
+                    if __file.endswith(ckpt_suffix):
                         ckpt = os.path.join(cfg.logdir + '/{}/{}/'.format(model_name, dataset_name), __file[:-6])
+                        break
+                else:
+                    print("no more epoch checkpoints, quitting")
+                    break
                 # ckpt = os.path.join(cfg.logdir, "model.ckpt-%d" % (num_batches_per_epoch_train * epoch))
+
                 saver.restore(sess, ckpt)
 
                 accuracy_sum = 0
