@@ -91,6 +91,7 @@ def main(args):
                 ave_acc = accuracy_sum / num_batches_test
                 print('the average accuracy is %f' % ave_acc)
 
+            coord.request_stop()
             coord.join(threads)
 
 
